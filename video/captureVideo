@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo "Capture 300 frames video output.raw"
+
+./capture -F -c 300 -o > output.raw
+
+echo "Finished"

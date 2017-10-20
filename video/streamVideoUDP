@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "Streaming Video using UDP protocol"
+
+./capture -F -o -c0|ffmpeg -f rawvideo -vcodec rawvideo -s 640x480 -r 25 -pix_fmt yuv420p -i pipe:0 -f mjpeg udp://192.168.7.1:1234
+
+echo "Finished"
+
