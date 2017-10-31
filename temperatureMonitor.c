@@ -4,6 +4,7 @@
 #include <pthread.h>    // pthread_*
 #include <string.h>     // strerror
 #include <errno.h>      // errno
+#include "sender.h"
 #include "A2D.h"
 #include "temperatureMonitor.h"
 
@@ -27,7 +28,13 @@ _Bool TemperatureMonitor_startMonitoring
     void
 )
 {
-    if (!A2D_init(TMP36_AIN_NUM) || pthread_create(&temperatureThread, NULL, &startTemperatureThread, NULL) != 0) {
+    if ( !A2D_init(TMP36_AIN_NUM) ) {
+        printf("[ERROR] failed to initialize A2D functionalities\n");
+
+        return false;
+    }
+
+    if (pthread_create(&temperatureThread, NULL, &startTemperatureThread, NULL) != 0) {
         printf("[ERROR] failed to create a thread in temperatureMonitor module reason: %s\n", strerror(errno));
 
         return false;
@@ -88,12 +95,18 @@ static void *startTemperatureThread
         convertedVoltageVal = covertAnalogToVoltage(A2DReadingVal);
         currentTemperature = covertVoltageToTemperature(convertedVoltageVal);
 
-        if (currentTemperature < MIN_TEMPERATURE_IN_CELSIUS_ALLOW || currentTemperature > MAX_TEMPERATURE_IN_CELSIUS_ALLOW)
-        {
-            // TODO send temperature to parent's BBG
+        if (currentTemperature < MIN_TEMPERATURE_IN_CELSIUS_ALLOW || currentTemperature > MAX_TEMPERATURE_IN_CELSIUS_ALLOW) {
+
+            // CRITICAL as we don't tolerate any failures returned by the send function
             printf("[WARN] detect abnormal temperature!\n");
+            while ( !Sender_sendDataToParentBBG(currentTemperature, TEMPERATURE) );
+        }
+        else {
+            // it's ok to tolerate any failures returned by the send function since it is not critical
+            Sender_sendDataToParentBBG(currentTemperature, TEMPERATURE);
         }
 
+        // TODO a module to record data into plain text file in BBG's local file system
         nanosleep(&monitorTime, &remainTime);
     }
 
