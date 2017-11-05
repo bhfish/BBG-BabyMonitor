@@ -13,8 +13,8 @@
 #define MAX_SEND_MSG_LEN            500
 
 // TODO: change it later
-#define PARENT_BBG_IPV4_ADDR        "192.168.2.1"
-#define PARENT_BBG_PORT_NUM         8808
+#define PARENT_BBG_IPV4_ADDR        "192.168.3.2"
+#define PARENT_BBG_PORT_NUM         12345
 
 static int clientSocketFD;
 static struct sockaddr_in parentBBGAddr;
@@ -33,11 +33,19 @@ _Bool Sender_init(void)
     return true;
 }
 
-_Bool Sender_sendDataToParentBBG(int dataToSend, DATA_CATEGORY CATEGORY)
+_Bool Sender_sendDataToParentBBG(int dataToSend, DATA_CATEGORY CATEGORY, _Bool isAlarm)
 {
     char msgToParentBBG[MAX_SEND_MSG_LEN] = {0};
+    char formatedMsg[MAX_SEND_MSG_LEN] = {0};
 
-    getFormatedMsg(dataToSend, CATEGORY, msgToParentBBG);
+    getFormatedMsg(dataToSend, CATEGORY, formatedMsg);
+
+    if (isAlarm) {
+        sprintf(msgToParentBBG, "%s%c%s", "alarm", DATA_CATEGORY_VALUE_SEPERATOR, formatedMsg);
+    }
+    else {
+        sprintf(msgToParentBBG, "%s", formatedMsg);
+    }
 
     if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT) == -1) {
         printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
@@ -89,12 +97,17 @@ static void getFormatedMsg(int dataVal, DATA_CATEGORY CATEGORY, char *message)
 {
     switch (CATEGORY) {
         case TEMPERATURE:
-            sprintf(message, "%s%c%d%c", TEMPERATURE_TYPE_DATA, DATA_TYPE_VALUE_SPLITOR,
-                                                dataVal, END_OF_DATA_VALUE_SPLITOR);
+            sprintf(message, "%s%c%d%c", TEMPERATURE_TYPE_DATA, DATA_CATEGORY_VALUE_SEPERATOR,
+                                                dataVal, END_OF_DATA_VALUE_SEPERATOR);
             break;
         case SOUND:
-            sprintf(message, "%s%c%d%c", SOUND_TYPE_DATA, DATA_TYPE_VALUE_SPLITOR,
-                                                dataVal, END_OF_DATA_VALUE_SPLITOR);
+            sprintf(message, "%s%c%d%c", SOUND_TYPE_DATA, DATA_CATEGORY_VALUE_SEPERATOR,
+                                                dataVal, END_OF_DATA_VALUE_SEPERATOR);
+            break;
+        case ACCELERATION:
+            // parent's BBG doesn't needs any data from accelerometer
+            sprintf(message, "%c", END_OF_DATA_VALUE_SEPERATOR);
+
             break;
     }
 }

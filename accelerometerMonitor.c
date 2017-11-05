@@ -7,6 +7,7 @@
 #include <string.h>     // strerror
 #include <errno.h>      // errno
 #include <stdint.h>     // int16_t
+#include "sender.h"
 #include "I2C.h"
 
 #define ACCELEROMETER_BUS_NUM               1
@@ -102,7 +103,7 @@ static void *startAccelerometerThread
 )
 {
     char xyzDataRegContent[NUM_OF_DATA_REGISTERS] = {0};
-    int16_t xVal, yVal, zVal;
+    // int16_t xVal, yVal, zVal;
     struct timespec monitorTime;
     struct timespec remainTime;
 
@@ -118,18 +119,20 @@ static void *startAccelerometerThread
             break;
         }
 
-        xVal = (xyzDataRegContent[OUT_X_MSB] << 8) | (xyzDataRegContent[OUT_X_LSB]);
-        yVal = (xyzDataRegContent[OUT_Y_MSB] << 8) | (xyzDataRegContent[OUT_Y_LSB]);
-        zVal = (xyzDataRegContent[OUT_Z_MSB] << 8) | (xyzDataRegContent[OUT_Z_LSB]);
+        // xVal = (xyzDataRegContent[OUT_X_MSB] << 8) | (xyzDataRegContent[OUT_X_LSB]);
+        // yVal = (xyzDataRegContent[OUT_Y_MSB] << 8) | (xyzDataRegContent[OUT_Y_LSB]);
+        // zVal = (xyzDataRegContent[OUT_Z_MSB] << 8) | (xyzDataRegContent[OUT_Z_LSB]);
 
         // TODO detect accelerations and raise an alarm to parent's BBG
-        printf("--------------------\n");
-        printf("x value: %d\n", xVal);
-        printf("y value: %d\n", yVal);
-        printf("z value: %d\n", zVal);
-        printf("--------------------\n");
-        printf("\n");
-        printf("\n");
+        // printf("--------------------\n");
+        // printf("x value: %d\n", xVal);
+        // printf("y value: %d\n", yVal);
+        // printf("z value: %d\n", zVal);
+        // printf("--------------------\n");
+        // printf("\n");
+        // printf("\n");
+
+        Sender_sendDataToParentBBG(-1, ACCELERATION, true);
         nanosleep(&monitorTime, &remainTime);
     }
 

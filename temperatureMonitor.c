@@ -6,6 +6,7 @@
 #include <errno.h>      // errno
 #include "sender.h"
 #include "A2D.h"
+#include "dataRecorder.h"
 #include "temperatureMonitor.h"
 
 #define TMP36_AIN_NUM                       3
@@ -14,7 +15,12 @@
 #define MAX_TEMPERATURE_IN_CELSIUS_ALLOW    20
 #define MIN_TEMPERATURE_IN_CELSIUS_ALLOW    16
 #define REF_VOLTAGE                         1.8
-#define MONITOR_TIME_INTERVAL_IN_S          300
+
+#ifdef DEMO_MODE
+    #define MONITOR_TIME_INTERVAL_IN_S      1
+#else
+    #define MONITOR_TIME_INTERVAL_IN_S      300
+#endif
 
 static pthread_t temperatureThread;
 static _Bool stopMonitoring = false;
@@ -23,10 +29,7 @@ static float covertAnalogToVoltage(int A2DReadingVal);
 static int covertVoltageToTemperature(float voltage);
 static void *startTemperatureThread(void *args);
 
-_Bool TemperatureMonitor_startMonitoring
-(
-    void
-)
+_Bool TemperatureMonitor_startMonitoring(void)
 {
     if ( !A2D_init(TMP36_AIN_NUM) ) {
         printf("[ERROR] failed to initialize A2D functionalities\n");
@@ -43,10 +46,7 @@ _Bool TemperatureMonitor_startMonitoring
     return true;
 }
 
-void TemperatureMonitor_stopMonitoring
-(
-    void
-)
+void TemperatureMonitor_stopMonitoring(void)
 {
     void *temperatureThreadExitStatus;
 
@@ -70,10 +70,7 @@ void TemperatureMonitor_stopMonitoring
 }
 
 // define the duty of temperature thread
-static void *startTemperatureThread
-(
-    void *args  // [in] list of argument passed by pthread_create()
-)
+static void *startTemperatureThread(void *args)
 {
     int A2DReadingVal, currentTemperature;
     float convertedVoltageVal;
@@ -89,7 +86,8 @@ static void *startTemperatureThread
 
         if (A2DReadingVal <= 0) {
             printf("[ERROR] unable to read current baby's room temperature\n");
-            // TODO raise alarm
+
+            break;
         }
 
         convertedVoltageVal = covertAnalogToVoltage(A2DReadingVal);
@@ -99,14 +97,16 @@ static void *startTemperatureThread
 
             // CRITICAL as we don't tolerate any failures returned by the send function
             printf("[WARN] detect abnormal temperature!\n");
-            while ( !Sender_sendDataToParentBBG(currentTemperature, TEMPERATURE) );
+
+            // send the data as well as the alarm request to parent's BBG
+            while ( !Sender_sendDataToParentBBG(currentTemperature, TEMPERATURE, true) );
         }
         else {
             // it's ok to tolerate any failures returned by the send function since it is not critical
-            Sender_sendDataToParentBBG(currentTemperature, TEMPERATURE);
+            Sender_sendDataToParentBBG(currentTemperature, TEMPERATURE, false);
         }
 
-        // TODO a module to record data into plain text file in BBG's local file system
+        DataRecorder_recordData(currentTemperature, TEMPERATURE);
         nanosleep(&monitorTime, &remainTime);
     }
 
@@ -114,19 +114,13 @@ static void *startTemperatureThread
 }
 
 // convert the specified analog input value into voltage value in v
-static float covertAnalogToVoltage
-(
-    int A2DReadingVal  // [in] analog readings
-)
+static float covertAnalogToVoltage(int A2DReadingVal)
 {
     return (float) A2DReadingVal / (float) MAX_A2D_VALUE * (float) REF_VOLTAGE;
 }
 
 // convert the specified voltage into temperature in Celsius reference from https://learn.adafruit.com/tmp36-temperature-sensor/overview
-static int covertVoltageToTemperature
-(
-    float voltage  // [in] voltage value
-)
+static int covertVoltageToTemperature(float voltage)
 {
     return (1000.0f * voltage - 500.0f) / 10.0f + 0.5f;
 }
