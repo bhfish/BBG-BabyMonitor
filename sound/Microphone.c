@@ -14,6 +14,8 @@ static double getAverageDecibels(double averageAmplitude);
 #define PCM_DEVICE_NAME "plughw:U0x46d0x825,0"
 #define SAMPLE_RATE_IN_HERTZ 48000
 #define NUMBER_OF_CHANNELS 1
+#define DB_OFFSET 72
+#define MAX_AMPLITUDE 32767
 
 static const snd_pcm_uframes_t PERIOD_SIZE = 4800;
 
@@ -68,7 +70,7 @@ static double getAverageAmplitude(short *buffer, int bufferSize) {
 }
 
 static double getAverageDecibels(double averageAmplitude) {
-    return 20 * log10(averageAmplitude);
+    return (20 * log10(averageAmplitude / MAX_AMPLITUDE)) + DB_OFFSET;
 }
 
 void* sendAverageDecibels() {
