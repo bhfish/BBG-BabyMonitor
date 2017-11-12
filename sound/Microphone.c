@@ -2,14 +2,20 @@
 // Created by vincent on 10/22/17.
 //
 
-#include<alsa/asoundlib.h>
-#include<math.h>
-#include<stdbool.h>
+#include "WaveStreamer.h"
+#include <alsa/asoundlib.h>
+#include <math.h>
+#include <stdbool.h>
 #include <alloca.h>
+#include <pthread.h> 
 
+static _Bool connectToDevice();
 static _Bool initializeDeviceSettings();
 static double getAverageAmplitude();
 static double getAverageDecibels(double averageAmplitude);
+static void* listenOverMicrophone(void *args);
+static void stopListening();
+static _Bool shouldStopListening();
 
 #define PCM_DEVICE_NAME "plughw:U0x46d0x825,0"
 #define SAMPLE_RATE_IN_HERTZ 48000
@@ -22,21 +28,49 @@ static const snd_pcm_uframes_t PERIOD_SIZE = 4800;
 static snd_pcm_t *pcmDevice;
 static snd_pcm_hw_params_t *deviceSettings;
 
-_Bool Microphone_Initialize() {
-    if (snd_pcm_open(&pcmDevice, PCM_DEVICE_NAME, SND_PCM_STREAM_CAPTURE, 0) < 0) {
-        printf("Error: unable to open PCM device");
+static pthread_t listenerThread;
+static pthread_mutex_t stopListeningMutex = PTHREAD_MUTEX_INITIALIZER;
+static _Bool stopListeningFlag = false;
+
+_Bool Microphone_startListening() {
+    if (pthread_create(&listenerThread, NULL, &listenOverMicrophone, NULL) != 0) {
+        printf("Error: failed to create new listener thread\n");
         return false;
     }
 
-    if (!initializeDeviceSettings()) {
+    if (!WaveStreamer_startStreaming()) {
         return false;
     }
 
     return true;
 }
 
-void Microphone_Stop() {
+void Microphone_stopListening() {
+    stopListening();
+
+    void* listenerThreadExitStatus;
+    if (pthread_join(listenerThread, &listenerThreadExitStatus) != 0) {
+        printf("Error: failed to join listener thread\n");
+    }
+
+    if (listenerThreadExitStatus != PTHREAD_CANCELED) {
+        printf("Error: thread has not been canceled, attempting to terminate thread\n");
+        if (pthread_cancel(listenerThread) != 0) {
+            printf("Error: thread failed to cancel\n");
+        }
+    }
+
+    WaveStreamer_stopStreaming();
     snd_pcm_close(pcmDevice);
+}
+
+static _Bool connectToDevice() {
+    if (snd_pcm_open(&pcmDevice, PCM_DEVICE_NAME, SND_PCM_STREAM_CAPTURE, 0) < 0) {
+        printf("Error: unable to open PCM device\n");
+        return false;
+    }
+
+    return true;
 }
 
 static _Bool initializeDeviceSettings() {
@@ -60,6 +94,53 @@ static _Bool initializeDeviceSettings() {
     return true;
 }
 
+static void stopListening() {
+    pthread_mutex_lock(&stopListeningMutex);
+    {
+        stopListeningFlag = true;
+    }
+    pthread_mutex_unlock(&stopListeningMutex);
+}
+
+static _Bool shouldStopListening() {
+    _Bool stopListening;
+
+    pthread_mutex_lock(&stopListeningMutex);
+    {
+        stopListening = stopListeningFlag;
+    }
+    pthread_mutex_unlock(&stopListeningMutex);
+    
+    return stopListening; 
+}
+
+static void* listenOverMicrophone(void *args) {
+
+    connectToDevice();
+    initializeDeviceSettings();
+    printf("here\n");
+
+    snd_pcm_uframes_t bufferSize = 2 * PERIOD_SIZE * 2;
+    short buffer[bufferSize];
+    while (!shouldStopListening()) {
+        snd_pcm_sframes_t frames;
+        frames = snd_pcm_readi(pcmDevice, &buffer, bufferSize);
+        if (frames < 0) {
+            printf("Error: reading frames (%s)\n", snd_strerror(frames));
+            return NULL;
+        }
+
+        WaveStreamer_sendBuffer(&buffer, bufferSize);
+
+        double averageAmplitude = getAverageAmplitude(buffer, bufferSize);
+        double averageDecibels = getAverageDecibels(averageAmplitude);
+        printf("\r current amplitude: %f current decibel: %f", averageAmplitude, averageDecibels);
+        fflush(stdout);
+    }
+
+    return NULL;
+}
+
 static double getAverageAmplitude(short *buffer, int bufferSize) {
     long long amplitudeSquareSum = 0LL;
     for (int i = 0 ; i < bufferSize ; i++) {
@@ -71,24 +152,4 @@ static double getAverageAmplitude(short *buffer, int bufferSize) {
 
 static double getAverageDecibels(double averageAmplitude) {
     return (20 * log10(averageAmplitude / MAX_AMPLITUDE)) + DB_OFFSET;
-}
-
-void* sendAverageDecibels() {
-    snd_pcm_uframes_t bufferSize = 2 * PERIOD_SIZE * 2;
-    short buffer[bufferSize];
-    while (1) {
-        snd_pcm_sframes_t frames;
-        frames = snd_pcm_readi(pcmDevice, &buffer, bufferSize);
-        if (frames < 0) {
-            printf("Error: reading frames (%s)\n", snd_strerror(frames));
-            break;
-        }
-
-        double averageAmplitude = getAverageAmplitude(buffer, bufferSize);
-        double averageDecibels = getAverageDecibels(averageAmplitude);
-        printf("\r current amplitude: %f current decibel: %f", averageAmplitude, averageDecibels);
-        fflush(stdout);
-    }
-
-    return NULL;
 }

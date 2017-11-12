@@ -4,7 +4,7 @@
 # Edit this file to compile extra C files into their own programs.
 TARGET= test
 
-SOURCES= main.c Microphone.h Microphone.c
+SOURCES= main.c Microphone.h Microphone.c WaveStreamer.h WaveStreamer.c
 
 
 PUBDIR = $(HOME)/cmpt433/public/myApps
