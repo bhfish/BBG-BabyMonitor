@@ -1,7 +1,7 @@
 /* A simple server in the internet domain using TCP
    The port number is passed as an argument */
 #include <stdio.h>
-#include<stdlib.h>
+#include <stdlib.h>
 #include <sys/types.h> 
 #include <sys/select.h>
 #include <sys/socket.h>
@@ -75,11 +75,11 @@ static void tcpServerTask(void)
 				printf("ERROR on accept");
 			}
 			 while(!finished){
-			 	printf("I'm here s\n");
+			 	//printf("I'm here s\n");
 				memset(rx_buffer, 0, sizeof(rx_buffer));
   		//memset(tx_buffer, '\0', sizeof(tx_buffer));
 				num_bytes = read(newsocketfd, rx_buffer, RX_BUFLEN);
-                printf("numb: %d\n", num_bytes);
+                //printf("numb: %d\n", num_bytes);
 
 				if(num_bytes > 0)
 				{
@@ -187,27 +187,41 @@ static int tcpServerBindPort(void)
 static int tcpServerCmdParse(char* rx_buffer)
 {
 	int res = 0;
-	char* buf_token;
-	
-	if ((buf_token = strtok(rx_buffer,":")) == NULL)
+    char* buf_tokens[2];
+
+    if ((buf_tokens[0] = strtok(rx_buffer,": \n\t\0")) != NULL){
+   		buf_tokens[1] = strtok(NULL, " \n\t\0");
+    }
+    else{
+        return -1;
+    }
+
+	if(strcmp("temperature", buf_tokens[0]) == 0)
 	{
-		return -1;
+		babyRoomTemp = atoi(buf_tokens[1]);
+        printf("Temperature is %d\n", babyRoomTemp);
 	}
-	if(strcmp("temperature", rx_buffer) == 0)
+	else if(strcmp("sound", buf_tokens[0]) == 0)
 	{
-		printf("Temperature is %d\n", rx_buffer[1]);
-		babyRoomTemp = rx_buffer[1];
+		babySoundLevel = atoi(buf_tokens[1]);
+        setBbySoundLevel(babySoundLevel);
+        printf("SOUND is %d\n", babySoundLevel);
 	}
-	else if(strcmp("sound", rx_buffer) == 0)
+	else if(strcmp("alarm", buf_tokens[0]) == 0)
 	{
-		printf("SOUND is %d\n", rx_buffer[1]);
-		babySoundLevel = rx_buffer[1];
+        alarmTriggered = true;
+        printf("...[TCP]Alarm trigger received.\n");
 	}
-	else if(strcmp("close", rx_buffer) == 0)
+	else if(strcmp("armed", buf_tokens[0]) == 0)
+	{
+        alarmStateArm = true;
+        printf("...[TCP]Alarm armed.\n");
+	}
+	else if(strcmp("close", buf_tokens[0]) == 0)
 	{
 		stopping = true;
 		tcpServerCleanup();
-		printf("Now close %d\n", rx_buffer[1]);
+		printf("Now close the program\n");
 	}
 
 	return res;

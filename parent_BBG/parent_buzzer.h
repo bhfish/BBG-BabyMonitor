@@ -15,5 +15,7 @@ int pmwBuzzSound(int mode);
 int pmwBuzzModeDefault(void);
 int pmwBuzzLoop(void);
 int pmwBuzzInit(void);
+void pmwBuzzSelectPrv(void);
+void pmwBuzzSelectNext(void);
 
 #endif

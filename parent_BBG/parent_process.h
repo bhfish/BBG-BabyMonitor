@@ -3,6 +3,8 @@
 
 #include <stdbool.h>
 
+#define DEVICEs_SLOTS "/sys/devices/platform/bone_capemgr/slots"
+
 typedef enum
 {
 	dispModeAlarmArm =0,
@@ -20,5 +22,8 @@ extern int alarmBuzzMode;
 extern int babySoundLevel;
 extern int babyRoomTemp;
 extern dispMode_t currentDispMode;
+
+void setBbySoundLevel(int sound);
+int getBbySoundLevel(void);
 
 #endif

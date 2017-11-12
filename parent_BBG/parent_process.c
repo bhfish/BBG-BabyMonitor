@@ -12,6 +12,13 @@
 #include "parent_process.h"
 #include "4digi_display.h"
 #include "tcp_server.h"
+#include "seg_disp.h"
+
+//Threshold to trigger alarm
+//#define SOUND_ALARM_TRIGGER_THRESHOLD  80
+
+//The maximum time buzzer sounds
+#define BUZZER_ALARM_CNTR_MAX  600
 
 //Program state settings
 bool stopping = false;
@@ -22,13 +29,30 @@ int babySoundLevel  = 0;
 int babyRoomTemp    = 0;
 dispMode_t currentDispMode = dispModeAlarmArm;
 
+
+void setBbySoundLevel(int sound)
+{
+    babySoundLevel = sound;
+}
+
+int getBbySoundLevel(void)
+{
+    return babySoundLevel;
+}
+
 void process(void)
 {
 //	static int i = 1;
 
+    static unsigned int alarmCntr = 0;
+
 	while(!stopping)
 	{
-		if(JOYST_UP == joystkDirection)
+//        if (babySoundLevel > SOUND_ALARM_TRIGGER_THRESHOLD){
+//            alarmTriggered = true;
+//        }
+
+        if (JOYST_UP == joystkDirection)
 		{
 			printf("joystick pushed up.\n");
 
@@ -38,6 +62,8 @@ void process(void)
 				currentDispMode = dispModeAlarmArm;
 			else
 				currentDispMode++;
+
+            printf("...[JS]currentDispMode: %d.\n", currentDispMode);
 
 		}
 		else if(JOYST_DOWN == joystkDirection)	
@@ -49,7 +75,7 @@ void process(void)
 				currentDispMode = dispModeSound;
 			else
 				currentDispMode--;
-
+            printf("...[JS]currentDispMode: %d.\n", currentDispMode);
 		}
 		else if(JOYST_PUSH == joystkDirection)
 		{
@@ -59,7 +85,9 @@ void process(void)
 			{
 				//Turn off the buzzer and disable the alarm
 				alarmTriggered = false;
-				alarmStateArm  = false;				
+				alarmStateArm  = false;
+                
+                printf("...[JS]alarmStateArm turned off.\n");				
 			}
 			else if(currentDispMode == dispModeAlarmArm)
 			{
@@ -68,6 +96,8 @@ void process(void)
 					alarmStateArm = true;
 				else
 					alarmStateArm = false;
+
+                printf("...[JS]alarmStateArm: %d.\n", alarmStateArm);
 			}
 		}
 		else if(JOYST_RIGHT == joystkDirection)
@@ -76,7 +106,7 @@ void process(void)
 			
 			if(currentDispMode == dispModeAlarmSound)
 			{
-
+                pmwBuzzSelectNext(); 
 			}
 		}
 		else if(JOYST_LEFT == joystkDirection)
@@ -85,12 +115,26 @@ void process(void)
 
 			if(currentDispMode == dispModeAlarmSound)
 			{
-
+                pmwBuzzSelectPrv();
 			}
 		}
 
-		nanosleep(&delay100ms, NULL);
+        if (alarmTriggered)
+        {
+            alarmCntr++;
+            if (alarmCntr >= BUZZER_ALARM_CNTR_MAX)
+            {
+                alarmTriggered = false;
+                alarmCntr = 0;
+            }
+        }
+        else
+        {
+            alarmCntr = 0;
+        }
 
+        //Delay
+        nanosleep(&delay100ms, NULL);
 	}
 }
 
@@ -101,10 +145,14 @@ int main(int argc, char *argv[])
 	pthread_t js_thread;
 	pthread_t process_thread;
 
-	//pmwBuzzInit();
+    //Turn on bus
+    //fileWriteS(DEVICEs_SLOTS, "BB-I2C1");
+    //fileWriteS(DEVICEs_SLOTS, "cape-universaln");
+
+	pmwBuzzInit();
 	digiDispInit();
 	tcpServerInit();
-
+    //segDispInit();
 
 	rt = pthread_create(&js_thread, NULL,  (void *)&joystkInit, NULL);
     if( rt )

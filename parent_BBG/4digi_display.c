@@ -29,6 +29,8 @@ const static char displayDigits[10]={0x3f,
 									 0x7f,
 									 0x67,};
 
+const static displayCharState[4] = {0x77, 0x38, 0x79, 0x6d};
+
 static void wait1(void);
 static int setClk(int val);
 static int setDio(int val);

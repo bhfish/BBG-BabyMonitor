@@ -27,9 +27,57 @@
 
 #define SONGS_TOTAL           2
 #define SONG_0_NODE_TOTAL_NUM 15
-#define SONG_1_NODE_TOTAL_NUM 15
+#define SONG_1_NODE_TOTAL_NUM 25
 
 
+
+int song0[SONG_0_NODE_TOTAL_NUM][2] = {
+							{BUZZ_SOUND_NODE_DO, 500},
+							{BUZZ_SOUND_NODE_DO, 500},
+							{BUZZ_SOUND_NODE_SO, 500},
+							{BUZZ_SOUND_NODE_SO, 500},
+							{BUZZ_SOUND_NODE_RA, 500},
+							{BUZZ_SOUND_NODE_RA, 500},
+							{BUZZ_SOUND_NODE_SO, 500},
+							{BUZZ_SOUND_NODE_NONE, 500},
+							{BUZZ_SOUND_NODE_FA, 500},
+							{BUZZ_SOUND_NODE_FA, 500},
+							{BUZZ_SOUND_NODE_MI, 500},
+							{BUZZ_SOUND_NODE_MI, 500},
+							{BUZZ_SOUND_NODE_RE, 500},
+							{BUZZ_SOUND_NODE_RE, 500},
+							{BUZZ_SOUND_NODE_DO, 500}
+						 };
+
+int song1[SONG_1_NODE_TOTAL_NUM][2] = {
+							{BUZZ_SOUND_NODE_MI, 500},
+							{BUZZ_SOUND_NODE_MI, 500},
+							{BUZZ_SOUND_NODE_MI, 1000},
+							{BUZZ_SOUND_NODE_MI, 500},
+							{BUZZ_SOUND_NODE_MI, 500},
+							{BUZZ_SOUND_NODE_MI, 1000},
+							{BUZZ_SOUND_NODE_MI, 500},
+							{BUZZ_SOUND_NODE_SO, 500},
+							{BUZZ_SOUND_NODE_DO, 500},
+							{BUZZ_SOUND_NODE_RE, 500},
+							{BUZZ_SOUND_NODE_MI, 1000},
+							{BUZZ_SOUND_NODE_FA, 500},
+							{BUZZ_SOUND_NODE_FA, 500},
+							{BUZZ_SOUND_NODE_FA, 250},
+							{BUZZ_SOUND_NODE_FA, 500},
+                            {BUZZ_SOUND_NODE_MI, 500},
+                            {BUZZ_SOUND_NODE_MI, 500},
+                            {BUZZ_SOUND_NODE_MI, 250},
+                            {BUZZ_SOUND_NODE_MI, 250},
+                            {BUZZ_SOUND_NODE_MI, 500},
+							{BUZZ_SOUND_NODE_RE, 500},
+							{BUZZ_SOUND_NODE_RE, 500},
+							{BUZZ_SOUND_NODE_DO, 500},
+							{BUZZ_SOUND_NODE_RE, 500},
+							{BUZZ_SOUND_NODE_SO, 1000}
+						 };
+
+/*
 int song0[SONG_0_NODE_TOTAL_NUM][2] = {
 							{BUZZ_SOUND_NODE_DO, 1},
 							{BUZZ_SOUND_NODE_DO, 1},
@@ -65,7 +113,7 @@ int song1[SONG_1_NODE_TOTAL_NUM][2] = {
 							{BUZZ_SOUND_NODE_RE, 1},
 							{BUZZ_SOUND_NODE_DO, 1}
 						 };
-
+*/
 typedef int songArr[2];
 
 typedef struct
@@ -169,15 +217,34 @@ int pmwBuzzPlay(songArr* node, int pos)
 	res = pmwBuzzValueSet(node[pos][0], (node[pos][0])/2);
 	pmwBuzzOn();
 
+    sleep_msec(node[pos][1]);
+
+/*
 	//Delay after playing each node
 	for(int i = 0; i < node[pos][1]; i++)
 	{
 		nanosleep(&delay500ms, NULL);
 	}
-
+*/
 	pmwBuzzOff();
 
 	return res;
+}
+
+void pmwBuzzSelectPrv(void)
+{
+    alarmBuzzMode--;
+    if (alarmBuzzMode < 0){
+        alarmBuzzMode = (SONGS_TOTAL - 1);
+    }
+}
+
+void pmwBuzzSelectNext(void)
+{
+    alarmBuzzMode++;
+    if (alarmBuzzMode >= SONGS_TOTAL){
+        alarmBuzzMode = 0;
+    }
 }
 
 void pmwBuzzTask(void)
@@ -194,6 +261,7 @@ void pmwBuzzTask(void)
 			//Check if the alarm sound is changed
 			if(songMode != alarmBuzzMode)
 			{
+printf("...[debug] Alarm song changed.\n");
 				songMode = alarmBuzzMode;
 				pos = 0;
 			}
