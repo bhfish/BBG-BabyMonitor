@@ -17,7 +17,7 @@
  * Define constant
  */
 #define RX_BUFLEN   500
-//#define TX_BUFLEN   500
+#define TX_BUFLEN   500
 #define PORT  12345
 #define MAX_NUM_CONNECTION  5
 
@@ -31,7 +31,8 @@ static struct sockaddr_in tcp_server;
 static struct sockaddr_in tcp_client;
 pthread_t tcpServerThreadId;
 
-static int tcpServerCmdParse(char* rx_buffer);
+//static int tcpServerCmdParse(char* rx_buffer);
+static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer);
 static void tcpServerTask(void);
 static int tcpServerBindPort(void);
 //static void test(void);
@@ -44,6 +45,7 @@ static void tcpServerTask(void)
 	//timeSpan.tv_usec = 100;
 
 	char rx_buffer[RX_BUFLEN];
+    char tx_buffer[TX_BUFLEN];
 	fd_set socketFileDescirptor;
 
 	//char tx_buffer[TX_BUFLEN];
@@ -77,19 +79,24 @@ static void tcpServerTask(void)
 			 while(!finished){
 			 	//printf("I'm here s\n");
 				memset(rx_buffer, 0, sizeof(rx_buffer));
-  		//memset(tx_buffer, '\0', sizeof(tx_buffer));
-				num_bytes = read(newsocketfd, rx_buffer, RX_BUFLEN);
+                memset(tx_buffer, '\0', sizeof(tx_buffer));
+
+                num_bytes = read(newsocketfd, rx_buffer, RX_BUFLEN);
                 //printf("numb: %d\n", num_bytes);
 
 				if(num_bytes > 0)
 				{
-					tcpServerCmdParse(rx_buffer);
-					printf("Here is the message: %s\n",rx_buffer);
+                    tcpServerCmdParse(rx_buffer, tx_buffer); 
+					//printf("Here is the message: %s\n",rx_buffer);
 				}
 				else{
 					finished = true;
 				}
 
+                if (strlen(tx_buffer) != 0){
+                    write(newsocketfd, tx_buffer, strlen(tx_buffer));
+                    printf("...[TCP]Reply: %s, strlen %d \n",tx_buffer, strlen(tx_buffer));
+                }
 			}
 		
 		//if(num_bytes < 0) printf("ERROR reading from socket");
@@ -184,7 +191,7 @@ static int tcpServerBindPort(void)
 	
 }
 
-static int tcpServerCmdParse(char* rx_buffer)
+static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer)
 {
 	int res = 0;
     char* buf_tokens[2];
@@ -211,6 +218,15 @@ static int tcpServerCmdParse(char* rx_buffer)
 	{
         alarmTriggered = true;
         printf("...[TCP]Alarm trigger received.\n");
+	}
+	else if(strcmp("getParentBBGStatus", buf_tokens[0]) == 0)
+	{
+        if (getSysInitStatus()){
+            strcpy(tx_buffer, "Active");
+        } else {
+            strcpy(tx_buffer, "Inactive");
+        }
+        printf("...[TCP]Reply parent BBG status: %s.\n", tx_buffer);
 	}
 	else if(strcmp("armed", buf_tokens[0]) == 0)
 	{

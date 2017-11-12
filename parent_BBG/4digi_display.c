@@ -29,7 +29,7 @@ const static char displayDigits[10]={0x3f,
 									 0x7f,
 									 0x67,};
 
-const static displayCharState[4] = {0x77, 0x38, 0x79, 0x6d};
+const static char displayCharState[4] = {0x77, 0x38, 0x79, 0x6d};
 
 static void wait1(void);
 static int setClk(int val);
@@ -197,21 +197,14 @@ static char convertChar(char ch,_Bool colon)
 
 int digiDispNum(int num)
 {
-	int i;
-	int temp[NUM_DIGITS];
+//	int i;
+//	int temp[NUM_DIGITS];
 
 	if(num < 0 || num > 9999)
 	{
 		printf("Error: 4Digi display invalid number: %d", num);
 		return -1;
 	}
-
-	//Conver number for each decimal position
-	temp[0] = (num/1000)%10;
-	temp[1] = (num/100)%10;	
-	temp[2] = (num/10)%10;
-	temp[3] = num%10;
-
 
 	//Start write to display
 	digiDispStartInput();
@@ -221,11 +214,25 @@ int digiDispNum(int num)
 	//Write data
 	digiDispStartInput();
 	digiDispWrite(START_ADDR);
-
+/*
 	for(i = 0; i< NUM_DIGITS; i++)
 	{
 		digiDispWrite(displayDigits[temp[i]]);
 	}
+*/
+    //Write the first digit
+    digiDispWrite(displayCharState[getDispMode()]);
+
+    //Write the second digit
+    digiDispWrite(displayDigits[(num/100)%10]);
+
+    //Write the third digit
+    digiDispWrite(displayDigits[(num/10)%10]);
+
+    //Write the last digit
+    digiDispWrite(displayDigits[num%10]);
+
+
 	digiDispStopInput();
 
 

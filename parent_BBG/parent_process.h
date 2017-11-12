@@ -25,5 +25,7 @@ extern dispMode_t currentDispMode;
 
 void setBbySoundLevel(int sound);
 int getBbySoundLevel(void);
+dispMode_t getDispMode(void);
+bool getSysInitStatus(void);
 
 #endif

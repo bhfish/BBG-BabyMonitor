@@ -24,11 +24,17 @@
 bool stopping = false;
 bool alarmTriggered = false;
 bool alarmStateArm  = false;
+bool sysInitStatusFlag = false;
 int alarmBuzzMode   = 0;
 int babySoundLevel  = 0;
 int babyRoomTemp    = 0;
 dispMode_t currentDispMode = dispModeAlarmArm;
 
+
+dispMode_t getDispMode(void)
+{
+    return currentDispMode;
+}
 
 void setBbySoundLevel(int sound)
 {
@@ -38,6 +44,11 @@ void setBbySoundLevel(int sound)
 int getBbySoundLevel(void)
 {
     return babySoundLevel;
+}
+
+bool getSysInitStatus(void)
+{
+    return sysInitStatusFlag;
 }
 
 void process(void)
@@ -141,7 +152,7 @@ void process(void)
 
 int main(int argc, char *argv[])
 {
-	int rt;
+	int rt = 0;
 	pthread_t js_thread;
 	pthread_t process_thread;
 
@@ -149,10 +160,35 @@ int main(int argc, char *argv[])
     //fileWriteS(DEVICEs_SLOTS, "BB-I2C1");
     //fileWriteS(DEVICEs_SLOTS, "cape-universaln");
 
-	pmwBuzzInit();
-	digiDispInit();
-	tcpServerInit();
+    if (rt == 0){
+        rt = pmwBuzzInit();
+    } else {
+        printf("...[SysInit]Buzzer thread creation failed: %d\n", rt);
+    }
+
+    if (rt == 0){
+        rt = digiDispInit();
+    } else {
+        printf("...[SysInit]4-digit diplay thread creation failed: %d\n", rt);
+    }
+
+    if (rt == 0){
+        rt = tcpServerInit();
+    } else {
+        printf("...[SysInit]TCP server thread creation failed: %d\n", rt);
+    }
+
     //segDispInit();
+    //
+    //System start correctly
+    if (rt == 0){
+        printf("...[SysInit]System STARTED\n");
+        sysInitStatusFlag = true;
+    } else {
+        return -1;
+    }
+
+
 
 	rt = pthread_create(&js_thread, NULL,  (void *)&joystkInit, NULL);
     if( rt )
