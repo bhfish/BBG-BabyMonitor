@@ -25,7 +25,7 @@ typedef enum
 {
     TEMPERATURE,
     SOUND,
-    ACCELERATION
+    UNKNOWN
 }DATA_CATEGORY;
 
 #endif

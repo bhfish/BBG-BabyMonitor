@@ -3,12 +3,15 @@
 #include <stdbool.h>    // _Bool
 // TODO remove later
 #include <unistd.h>     // sleep
+#include <pthread.h>    // pthread_*
 #include "dataRecorder.h"
-#include "sender.h"
+#include "tcpSender.h"
+#include "udpListener.h"
 #include "temperatureMonitor.h"
 #include "accelerometerMonitor.h"
 
 static _Bool restartReqSent = false;
+static _Bool isSystemRunning = false;
 
 static void startBabyMonitor(void);
 static void stopBabyMonitor(void);
@@ -34,9 +37,15 @@ int main(int argc, char const *argv[])
 }
 
 // *********NOTE********** ONLY the UDP server can make this request!
-void requestSystemRestart(void)
+void BabayMonitor_requestSystemRestart(void)
 {
     restartReqSent = true;
+}
+
+_Bool BabayMonitor_isSystemRunning(void)
+{
+    // TODO get the status of parent's BBG
+    return isSystemRunning;
 }
 
 // initialize required resources for baby monitor system
@@ -50,37 +59,48 @@ static void startBabyMonitor(void)
         4) other modules
     */
 
-    if ( !Sender_init() ) {
-        printf("[ERROR] failed to init sender module\n");
+    // if ( !TCPSender_init() ) {
+    //     printf("[ERROR] failed to init sender module\n");
 
-        // TODO: render error to user interface
+    //     return;
+    // }
+
+    if ( !UDPListener_startListening() ) {
+        printf("[ERROR] failed to init UDP listener module\n");
+
+        return;
     }
 
     if ( !AccelerometerMonitor_startMonitoring() ) {
         printf("[ERROR] failed to init AccelerometerMonitor module\n");
 
-        // TODO: render error to user interface
+        return;
     }
 
     if ( !TemperatureMonitor_startMonitoring() ) {
         printf("[ERROR] failed to init temperatureMonitor module\n");
 
-        // TODO: render error to user interface
+        return;
     }
 
     if ( !DataRecorder_startRecording() ) {
         printf("[ERROR] failed to init temperatureMonitor module\n");
 
-        // TODO: render error to user interface
+        return;
     }
+
+    isSystemRunning = true;
 }
 
 // stop/de-allocate initialized modules/resources
 static void stopBabyMonitor(void)
 {
-    // TODO: video/sound and UDP server
-    Sender_cleanUp();
+    isSystemRunning = false;
+
+    // TODO: video/sound
+    TCPSender_cleanUp();
     AccelerometerMonitor_stopMonitoring();
     TemperatureMonitor_stopMonitoring();
     DataRecorder_stopRecording();
+    UDPListener_stopListening();
 }

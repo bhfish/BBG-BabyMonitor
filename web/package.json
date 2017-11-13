@@ -1,0 +1,9 @@
+ {
+    "name": "Baby-Monitoring",
+    "version": "1.0.0",
+    "description": "baby monitoring server",
+    "dependencies": {
+        "socket.io": "~0.9.6",
+        "mime": "~1.2.7"
+    }
+ }

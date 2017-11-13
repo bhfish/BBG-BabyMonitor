@@ -8,7 +8,7 @@
 #include <unistd.h>     // close
 #include <netdb.h>      // sockaddr_in
 #include <arpa/inet.h>  // inet_pton
-#include "sender.h"
+#include "tcpSender.h"
 
 #define MAX_SEND_MSG_LEN            500
 
@@ -22,7 +22,7 @@ static struct sockaddr_in parentBBGAddr;
 static void getFormatedMsg(int dataVal, DATA_CATEGORY CATEGORY, char *message);
 static _Bool initTCPSocket(void);
 
-_Bool Sender_init(void)
+_Bool TCPSender_init(void)
 {
     if ( !initTCPSocket() ) {
         printf("[ERROR] failed to initialize a client socket to communicate to parent's BBG\n");
@@ -33,19 +33,12 @@ _Bool Sender_init(void)
     return true;
 }
 
-_Bool Sender_sendDataToParentBBG(int dataToSend, DATA_CATEGORY CATEGORY, _Bool isAlarm)
+_Bool TCPSender_sendDataToParentBBG(int dataToSend, DATA_CATEGORY CATEGORY)
 {
     char msgToParentBBG[MAX_SEND_MSG_LEN] = {0};
     char formatedMsg[MAX_SEND_MSG_LEN] = {0};
 
     getFormatedMsg(dataToSend, CATEGORY, formatedMsg);
-
-    if (isAlarm) {
-        sprintf(msgToParentBBG, "%s%c%s", "alarm", DATA_CATEGORY_VALUE_SEPERATOR, formatedMsg);
-    }
-    else {
-        sprintf(msgToParentBBG, "%s", formatedMsg);
-    }
 
     if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT) == -1) {
         printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
@@ -56,7 +49,20 @@ _Bool Sender_sendDataToParentBBG(int dataToSend, DATA_CATEGORY CATEGORY, _Bool i
     return true;
 }
 
-void Sender_cleanUp(void)
+_Bool TCPSender_sendAlarmRequestToParentBBG(void)
+{
+    char *msgToParentBBG = "alarm";
+
+    if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT) == -1) {
+        printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
+
+        return false;
+    }
+
+    return true;
+}
+
+void TCPSender_cleanUp(void)
 {
     close(clientSocketFD);
 }
@@ -104,7 +110,7 @@ static void getFormatedMsg(int dataVal, DATA_CATEGORY CATEGORY, char *message)
             sprintf(message, "%s%c%d%c", SOUND_TYPE_DATA, DATA_CATEGORY_VALUE_SEPERATOR,
                                                 dataVal, END_OF_DATA_VALUE_SEPERATOR);
             break;
-        case ACCELERATION:
+        case UNKNOWN:
             // parent's BBG doesn't needs any data from accelerometer
             sprintf(message, "%c", END_OF_DATA_VALUE_SEPERATOR);
 

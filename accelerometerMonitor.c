@@ -7,7 +7,7 @@
 #include <string.h>     // strerror
 #include <errno.h>      // errno
 #include <stdint.h>     // int16_t
-#include "sender.h"
+#include "tcpSender.h"
 #include "I2C.h"
 
 #define ACCELEROMETER_BUS_NUM               1
@@ -132,7 +132,7 @@ static void *startAccelerometerThread
         // printf("\n");
         // printf("\n");
 
-        Sender_sendDataToParentBBG(-1, ACCELERATION, true);
+        // TCPSender_sendDataToParentBBG(-1, UNKNOWN, true);
         nanosleep(&monitorTime, &remainTime);
     }
 

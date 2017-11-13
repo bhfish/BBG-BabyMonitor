@@ -10,6 +10,9 @@
 // spawn and start a new thread for temperature recording
 _Bool TemperatureMonitor_startMonitoring(void);
 
+// get current baby's room temperature
+int TemperatureMonitor_getCurrentTemperature(void);
+
 // stop the tread and exit gracefully
 void TemperatureMonitor_stopMonitoring(void);
 

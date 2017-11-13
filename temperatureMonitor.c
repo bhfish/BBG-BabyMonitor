@@ -4,7 +4,7 @@
 #include <pthread.h>    // pthread_*
 #include <string.h>     // strerror
 #include <errno.h>      // errno
-#include "sender.h"
+#include "tcpSender.h"
 #include "A2D.h"
 #include "dataRecorder.h"
 #include "temperatureMonitor.h"
@@ -16,14 +16,11 @@
 #define MIN_TEMPERATURE_IN_CELSIUS_ALLOW    16
 #define REF_VOLTAGE                         1.8
 
-#ifdef DEMO_MODE
-    #define MONITOR_TIME_INTERVAL_IN_S      1
-#else
-    #define MONITOR_TIME_INTERVAL_IN_S      300
-#endif
+#define MONITOR_TIME_INTERVAL_IN_S          1
 
 static pthread_t temperatureThread;
 static _Bool stopMonitoring = false;
+static int currentTemperature;
 
 static float covertAnalogToVoltage(int A2DReadingVal);
 static int covertVoltageToTemperature(float voltage);
@@ -44,6 +41,11 @@ _Bool TemperatureMonitor_startMonitoring(void)
     }
 
     return true;
+}
+
+int TemperatureMonitor_getCurrentTemperature(void)
+{
+    return currentTemperature;
 }
 
 void TemperatureMonitor_stopMonitoring(void)
@@ -72,7 +74,7 @@ void TemperatureMonitor_stopMonitoring(void)
 // define the duty of temperature thread
 static void *startTemperatureThread(void *args)
 {
-    int A2DReadingVal, currentTemperature;
+    int A2DReadingVal;
     float convertedVoltageVal;
     struct timespec monitorTime;
     struct timespec remainTime;
@@ -93,20 +95,19 @@ static void *startTemperatureThread(void *args)
         convertedVoltageVal = covertAnalogToVoltage(A2DReadingVal);
         currentTemperature = covertVoltageToTemperature(convertedVoltageVal);
 
-        if (currentTemperature < MIN_TEMPERATURE_IN_CELSIUS_ALLOW || currentTemperature > MAX_TEMPERATURE_IN_CELSIUS_ALLOW) {
+        // if (currentTemperature < MIN_TEMPERATURE_IN_CELSIUS_ALLOW || currentTemperature > MAX_TEMPERATURE_IN_CELSIUS_ALLOW) {
 
-            // CRITICAL as we don't tolerate any failures returned by the send function
-            printf("[WARN] detect abnormal temperature!\n");
+        //     // CRITICAL as we don't tolerate any failures returned by the send function
+        //     printf("[WARN] detect abnormal temperature!\n");
 
-            // send the data as well as the alarm request to parent's BBG
-            while ( !Sender_sendDataToParentBBG(currentTemperature, TEMPERATURE, true) );
-        }
-        else {
-            // it's ok to tolerate any failures returned by the send function since it is not critical
-            Sender_sendDataToParentBBG(currentTemperature, TEMPERATURE, false);
-        }
+        //     // if this failed, there is nothing we can do much from baby's BBG side
+        //     TCPSender_sendAlarmRequestToParentBBG();
+        // }
+        // else {
+        //     // it's ok to tolerate any failures returned by the send function since it is not critical
+        //     TCPSender_sendDataToParentBBG(currentTemperature, TEMPERATURE);
+        // }
 
-        DataRecorder_recordData(currentTemperature, TEMPERATURE);
         nanosleep(&monitorTime, &remainTime);
     }
 
