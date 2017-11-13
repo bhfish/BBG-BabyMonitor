@@ -7,6 +7,6 @@
 
 _Bool WaveStreamer_startStreaming();
 void WaveStreamer_stopStreaming();
-_Bool WaveStreamer_sendBuffer(void* buffer, int bufferSize);
+void WaveStreamer_setBuffer(void* buffer, int bufferSize);
 
 #endif
