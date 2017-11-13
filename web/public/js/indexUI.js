@@ -16,6 +16,7 @@ const SYSTEM_ERROR_MESSAGE = "Internal System Error: system is not running" +
 const GET_MONITOR_BBG_STATUS_EVENT_NAME = "getMonitorBBGStatus";
 const GET_ALARM_BBG_STATUS_EVENT_NAME = "getAlarmBBGStatus";
 const GET_TEMPERATURE_EVENT_NAME = "getTemperature";
+const GET_DECIBEL_EVENT_NAME = "getDecibel"
 const GET_TEMPERATURE_DATASET_EVENT_NAME = "getTemperatureDataset"
 const MONITOR_BBG_FAILURE_EVENT_NAME = "monitorSystemFailure"
 const ALARM_BBG_FAILURE_EVENT_NAME = "alarmSystemFailure"
@@ -56,6 +57,11 @@ $(document).ready(function() {
         getBabyRoomTemperature();
     }, 1000);
 
+    // get the current decibel from baby's room for every 1s
+    setInterval(function(){
+        getDecibel();
+    });
+
     // get the current temperature data for every 10s
     setInterval(function(){
         getBabyRoomTemperatureDataset();
@@ -85,6 +91,11 @@ function getAlarmBBGRunningStatus() {
 // send the request for the current baby's room temperature to monitor BBG
 function getBabyRoomTemperature() {
     nodeServerSocket.emit(GET_TEMPERATURE_EVENT_NAME, null);
+}
+
+// send the request for current baby's room temperature to monitor BBG
+function getDecibel(){
+    nodeServerSocket.emit(GET_DECIBEL_EVENT_NAME, null);
 }
 
 // send the request for the dataset of baby's room temperature to monitor BBG

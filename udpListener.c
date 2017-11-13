@@ -15,6 +15,7 @@
 #include "temperatureMonitor.h"
 #include "udpListener.h"
 #include "babyMonitor.h"
+#include "Microphone.h"
 
 #define LISTEN_PORT_NUM                    8809
 #define MAX_RECV_MSG_LENGTH                500
@@ -112,6 +113,9 @@ static void RespondClientsRequest(char *clientRequest, int clientFd, struct sock
     }
     else if (strcmp(clientRequest, "getTemperature") == 0) {
         sprintf(responseMsg, "getTemperature:%d", TemperatureMonitor_getCurrentTemperature());
+    }
+    else if (strcmp(clientRequest, "getDecibel") == 0) {
+        sprintf(responseMsg, "getDecibel:%d", Microphone_getCurrentDecibel());
     }
 
     SendResponseMsgToClient(responseMsg, strlen(responseMsg), clientFd, clientAddr);

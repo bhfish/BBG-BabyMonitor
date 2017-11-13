@@ -9,6 +9,8 @@
 #include <alloca.h>
 #include <pthread.h>
 #include <string.h>
+#include "tcpSender.h"
+#include "monitorData.h"
 
 static _Bool connectToDevice();
 static _Bool initializeDeviceSettings();
@@ -127,8 +129,8 @@ static _Bool shouldStopListening() {
         stopListening = stopListeningFlag;
     }
     pthread_mutex_unlock(&stopListeningMutex);
-    
-    return stopListening; 
+
+    return stopListening;
 }
 
 static void* listenOverMicrophone(void *args) {
@@ -177,8 +179,12 @@ static void setCurrentDecibels(short *buffer, int bufferSize) {
 }
 
 static void alertIfDecibelOutsideThreshHold() {
-    double decibel = Microphone_getCurrentDecibel();
+    int decibel = Microphone_getCurrentDecibel();
     if (decibel > MAX_DECIBEL_THRESH_HOLD) {
-        printf("Decibel is out side of thresh hold with value of: %f\n", decibel);
+        printf("Decibel is out side of thresh hold with value of: %d\n", decibel);
+        // TCPSender_sendAlarmRequestToParentBBG();
+    }
+    else{
+        // TCPSender_sendDataToParentBBG(SOUND, decibel);
     }
 }

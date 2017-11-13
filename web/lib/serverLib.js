@@ -28,6 +28,7 @@ const net = require('net');
 const GET_MONITOR_BBG_STATUS_EVENT_NAME = "getMonitorBBGStatus";
 const GET_ALARM_BBG_STATUS_EVENT_NAME = "getAlarmBBGStatus";
 const GET_TEMPERATURE_EVENT_NAME = "getTemperature";
+const GET_DECIBEL_EVENT_NAME = "getDecibel"
 const GET_TEMPERATURE_DATASET_EVENT_NAME = "getTemperatureDataset"
 const MONITOR_BBG_FAILURE_EVENT_NAME = "monitorSystemFailure"
 const ALARM_BBG_FAILURE_EVENT_NAME = "alarmSystemFailure"
@@ -86,8 +87,15 @@ function waitForClientUIRequest(clientWebSocket) {
             sendMessageToClient(clientWebSocket, MONITOR_BBG_FAILURE_EVENT_NAME, null);
         }, MONITOR_BBG_SEND_REQUEST_TIME_OUT);
 
-        // redirect request to the C server program which runs in monitor BBG
         sendRequestToMonitorBBG(GET_TEMPERATURE_EVENT_NAME + "\n");
+    });
+
+    clientWebSocket.on(GET_DECIBEL_EVENT_NAME, function() {
+        eventTimeoutArr[GET_DECIBEL_EVENT_NAME] = setTimeout(function(){
+            sendMessageToClient(clientWebSocket, MONITOR_BBG_FAILURE_EVENT_NAME, null);
+        }, MONITOR_BBG_SEND_REQUEST_TIME_OUT);
+
+        sendRequestToMonitorBBG(GET_DECIBEL_EVENT_NAME + "\n");
     });
 
     clientWebSocket.on(GET_TEMPERATURE_DATASET_EVENT_NAME, function() {
