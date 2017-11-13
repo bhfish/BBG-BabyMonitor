@@ -7,21 +7,24 @@
 #include <math.h>
 #include <stdbool.h>
 #include <alloca.h>
-#include <pthread.h> 
+#include <pthread.h>
+#include <string.h>
 
 static _Bool connectToDevice();
 static _Bool initializeDeviceSettings();
 static double getAverageAmplitude();
-static double getAverageDecibels(double averageAmplitude);
 static void* listenOverMicrophone(void *args);
 static void stopListening();
 static _Bool shouldStopListening();
+static void setCurrentDecibels(short *buffer, int bufferSize);
+static void alertIfDecibelOutsideThreshHold();
 
 #define PCM_DEVICE_NAME "plughw:U0x46d0x825,0"
 #define SAMPLE_RATE_IN_HERTZ 48000
 #define NUMBER_OF_CHANNELS 1
 #define DB_OFFSET 72
 #define MAX_AMPLITUDE 32767
+#define MAX_DECIBEL_THRESH_HOLD 60
 
 static const snd_pcm_uframes_t PERIOD_SIZE = 4800;
 
@@ -31,6 +34,9 @@ static snd_pcm_hw_params_t *deviceSettings;
 static pthread_t listenerThread;
 static pthread_mutex_t stopListeningMutex = PTHREAD_MUTEX_INITIALIZER;
 static _Bool stopListeningFlag = false;
+
+static pthread_mutex_t currentDecibelMutex = PTHREAD_MUTEX_INITIALIZER;
+static double currentDecibel;
 
 _Bool Microphone_startListening() {
     if (pthread_create(&listenerThread, NULL, &listenOverMicrophone, NULL) != 0) {
@@ -62,6 +68,17 @@ void Microphone_stopListening() {
 
     WaveStreamer_stopStreaming();
     snd_pcm_close(pcmDevice);
+}
+
+int Microphone_getCurrentDecibel() {
+    double decibel = 0.0;
+    pthread_mutex_lock(&currentDecibelMutex);
+    {
+        decibel = currentDecibel;
+    }
+    pthread_mutex_unlock(&currentDecibelMutex);
+
+    return (int) ceil(decibel);
 }
 
 static _Bool connectToDevice() {
@@ -115,10 +132,8 @@ static _Bool shouldStopListening() {
 }
 
 static void* listenOverMicrophone(void *args) {
-
     connectToDevice();
     initializeDeviceSettings();
-    printf("here\n");
 
     snd_pcm_uframes_t bufferSize = 2 * PERIOD_SIZE * 2;
     short buffer[bufferSize];
@@ -130,12 +145,9 @@ static void* listenOverMicrophone(void *args) {
             return NULL;
         }
 
-        WaveStreamer_sendBuffer(&buffer, bufferSize);
-
-        double averageAmplitude = getAverageAmplitude(buffer, bufferSize);
-        double averageDecibels = getAverageDecibels(averageAmplitude);
-        printf("\r current amplitude: %f current decibel: %f", averageAmplitude, averageDecibels);
-        fflush(stdout);
+        WaveStreamer_sendBuffer(buffer, bufferSize);
+        setCurrentDecibels(buffer, bufferSize);
+        alertIfDecibelOutsideThreshHold();
     }
 
     return NULL;
@@ -150,6 +162,23 @@ static double getAverageAmplitude(short *buffer, int bufferSize) {
     return sqrt((amplitudeSquareSum / (double) bufferSize));
 }
 
-static double getAverageDecibels(double averageAmplitude) {
-    return (20 * log10(averageAmplitude / MAX_AMPLITUDE)) + DB_OFFSET;
+static void setCurrentDecibels(short *buffer, int bufferSize) {
+    double averageAmplitude = getAverageAmplitude(buffer, bufferSize);
+    double averageDecibels = (20 * log10(averageAmplitude / MAX_AMPLITUDE)) + DB_OFFSET;
+
+    pthread_mutex_lock(&currentDecibelMutex);
+    {
+        currentDecibel = averageDecibels;
+    }
+    pthread_mutex_unlock(&currentDecibelMutex);
+
+    printf("\r current amplitude: %f current decibel: %d", averageAmplitude, Microphone_getCurrentDecibel());
+    fflush(stdout);
+}
+
+static void alertIfDecibelOutsideThreshHold() {
+    double decibel = Microphone_getCurrentDecibel();
+    if (decibel > MAX_DECIBEL_THRESH_HOLD) {
+        printf("Decibel is out side of thresh hold with value of: %f\n", decibel);
+    }
 }

@@ -7,5 +7,6 @@
 
 _Bool Microphone_startListening();
 void Microphone_stopListening();
+int Microphone_getCurrentDecibel();
 
 #endif
