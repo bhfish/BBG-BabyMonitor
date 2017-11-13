@@ -1,13 +1,24 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "parent_publicFunc.h"
 #include "parent_joystick.h"
 #include "parent_gpio.h"
 #include "parent_process.h"
 
-joystkDrctn_t joystkDirection= JOYST_NONE;
+static joystkDrctn_t joystkDirection= JOYST_NONE;
+static pthread_t jsThreadId;
+
 /**
 * Function to get joystick dirction
+**/
+joystkDrctn_t joystkDirGet(void)
+{
+    return joystkDirection;
+}
+
+/**
+* Function to determine joystick dirction
 **/
 static joystkDrctn_t getJsDrctn(void)
 {
@@ -49,6 +60,15 @@ static void joystkTask(void)
 		nanosleep(&delay100ms, NULL);
 	}
 }
+
+
+void joystCleanup(void)
+{
+
+	printf("...Stopping joystick thread.\n");
+	pthread_join(jsThreadId, NULL);
+}
+
 
 static int joystkGpioExport(void)
 {
@@ -113,7 +133,7 @@ static int joystkGpioSetDrctnIn(void)
 /**
 * Thread initialization
 **/
-void joystkInit(void)
+int joystkInit(void)
 {
 	int res = 0;
 
@@ -128,10 +148,9 @@ void joystkInit(void)
 
 	if(res == 0)
 	{
-		joystkTask();
+		printf("...Creating joystick thread.\n");
+		res = pthread_create(&jsThreadId, NULL,  (void *)&joystkTask, NULL);
 	}
-	else
-	{
-		printf("ERROR: Joystick module initialization failed.\n");
-	}
+
+    return res;
 }

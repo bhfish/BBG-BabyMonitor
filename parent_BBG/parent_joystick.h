@@ -15,8 +15,8 @@ typedef enum
 	JOYST_NONE	
 } joystkDrctn_t;
 
-extern joystkDrctn_t joystkDirection;
-
-void joystkInit(void);
+int joystkInit(void);
+void joystCleanup(void);
+joystkDrctn_t joystkDirGet(void);
 
 #endif

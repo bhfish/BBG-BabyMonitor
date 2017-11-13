@@ -17,12 +17,16 @@
 //Threshold to trigger alarm
 //#define SOUND_ALARM_TRIGGER_THRESHOLD  80
 
-//The maximum time buzzer sounds
-#define BUZZER_ALARM_CNTR_MAX  600
+//The maximum time buzzer sounds without push to stop
+#define BUZZER_ALARM_TRIGGER_CNTR_MAX  300
+
+//The maximum time buzzer sleeps without accepting alarm trigger signal
+#define BUZZER_ALARM_SLEEP_CNTR_MAX  300
 
 //Program state settings
 bool stopping = false;
 bool alarmTriggered = false;
+static bool alarmSleep = false;
 bool alarmStateArm  = false;
 bool sysInitStatusFlag = false;
 int alarmBuzzMode   = 0;
@@ -46,6 +50,11 @@ int getBbySoundLevel(void)
     return babySoundLevel;
 }
 
+bool getAlarmSleepStatus(void)
+{
+    return alarmSleep;
+}
+
 bool getSysInitStatus(void)
 {
     return sysInitStatusFlag;
@@ -55,6 +64,8 @@ void process(void)
 {
 //	static int i = 1;
 
+    joystkDrctn_t jsDirPrev = JOYST_NONE;
+    joystkDrctn_t jsDirCurrent = JOYST_NONE;
     static unsigned int alarmCntr = 0;
 
 	while(!stopping)
@@ -63,84 +74,107 @@ void process(void)
 //            alarmTriggered = true;
 //        }
 
-        if (JOYST_UP == joystkDirection)
-		{
-			printf("joystick pushed up.\n");
+        jsDirCurrent = joystkDirGet();
 
-
-			//Display next mode
-			if(currentDispMode == dispModeSound)
-				currentDispMode = dispModeAlarmArm;
-			else
-				currentDispMode++;
-
-            printf("...[JS]currentDispMode: %d.\n", currentDispMode);
-
-		}
-		else if(JOYST_DOWN == joystkDirection)	
-		{
-			printf("joystick pushed down.\n");
-	
-			//Display previous mode
-			if(currentDispMode == dispModeAlarmArm)
-				currentDispMode = dispModeSound;
-			else
-				currentDispMode--;
-            printf("...[JS]currentDispMode: %d.\n", currentDispMode);
-		}
-		else if(JOYST_PUSH == joystkDirection)
-		{
-			printf("joystick pushed center.\n");
-			
-			if(alarmTriggered)
-			{
-				//Turn off the buzzer and disable the alarm
-				alarmTriggered = false;
-				alarmStateArm  = false;
-                
-                printf("...[JS]alarmStateArm turned off.\n");				
-			}
-			else if(currentDispMode == dispModeAlarmArm)
-			{
-				//Push joystick to arm/unarm the alarm
-				if(alarmStateArm  == false)
-					alarmStateArm = true;
-				else
-					alarmStateArm = false;
-
-                printf("...[JS]alarmStateArm: %d.\n", alarmStateArm);
-			}
-		}
-		else if(JOYST_RIGHT == joystkDirection)
-		{
-			printf("joystick pushed right.\n");
-			
-			if(currentDispMode == dispModeAlarmSound)
-			{
-                pmwBuzzSelectNext(); 
-			}
-		}
-		else if(JOYST_LEFT == joystkDirection)
-		{
-			printf("joystick pushed light.\n");
-
-			if(currentDispMode == dispModeAlarmSound)
-			{
-                pmwBuzzSelectPrv();
-			}
-		}
-
-        if (alarmTriggered)
+        if (jsDirPrev != jsDirCurrent)
         {
-            alarmCntr++;
-            if (alarmCntr >= BUZZER_ALARM_CNTR_MAX)
+            jsDirPrev = jsDirCurrent;
+
+            if (JOYST_UP == jsDirCurrent)
             {
+                printf("joystick pushed up.\n");
+
+
+                //Display next mode
+                if(currentDispMode == dispModeSound)
+                    currentDispMode = dispModeAlarmArm;
+                else
+                    currentDispMode++;
+
+                printf("...[JS]currentDispMode: %d.\n", currentDispMode);
+
+            }
+            else if(JOYST_DOWN == jsDirCurrent)	
+            {
+                printf("joystick pushed down.\n");
+        
+                //Display previous mode
+                if(currentDispMode == dispModeAlarmArm)
+                    currentDispMode = dispModeSound;
+                else
+                    currentDispMode--;
+
+                printf("...[JS]currentDispMode: %d.\n", currentDispMode);
+            }
+            else if(JOYST_PUSH == jsDirCurrent)
+            {
+                printf("joystick pushed center.\n");
+                
+                if(alarmTriggered)
+                {
+                    //Turn off the buzzer and disable the alarm
+                    alarmTriggered = false;
+                    alarmStateArm  = false;
+                    
+                    printf("...[JS]alarmStateArm turned off.\n");				
+                }
+                else if(currentDispMode == dispModeAlarmArm)
+                {
+                    //Push joystick to arm/unarm the alarm
+                    if(alarmStateArm  == false)
+                        alarmStateArm = true;
+                    else
+                        alarmStateArm = false;
+
+                    printf("...[JS]alarmStateArm: %d.\n", alarmStateArm);
+                }
+            }
+            else if(JOYST_RIGHT == jsDirCurrent)
+            {
+                printf("joystick pushed right.\n");
+                
+                if(currentDispMode == dispModeAlarmSound)
+                {
+                    pmwBuzzSelectNext(); 
+                }
+            }
+            else if(JOYST_LEFT == jsDirCurrent)
+            {
+                printf("joystick pushed light.\n");
+
+                if(currentDispMode == dispModeAlarmSound)
+                {
+                    pmwBuzzSelectPrv();
+                }
+            }
+        }
+
+        if (alarmTriggered) {
+            alarmCntr++;
+            if (alarmCntr >= BUZZER_ALARM_TRIGGER_CNTR_MAX) {
+                //Turn off buzzer ring
                 alarmTriggered = false;
+
+                //Enable alarm sleep mode
+                alarmSleep = true;
+
+                //reset counter
                 alarmCntr = 0;
             }
         }
-        else
-        {
+        else if (alarmSleep) {
+            alarmCntr++;
+            alarmTriggered = false;
+
+            if (alarmCntr >= BUZZER_ALARM_SLEEP_CNTR_MAX) 
+            {
+                //End sleep mode
+                alarmSleep = false;
+
+                //reset counter
+                alarmCntr = 0;
+            }
+        } else {
             alarmCntr = 0;
         }
 
@@ -153,7 +187,7 @@ void process(void)
 int main(int argc, char *argv[])
 {
 	int rt = 0;
-	pthread_t js_thread;
+//	pthread_t js_thread;
 	pthread_t process_thread;
 
     //Turn on bus
@@ -178,6 +212,13 @@ int main(int argc, char *argv[])
         printf("...[SysInit]TCP server thread creation failed: %d\n", rt);
     }
 
+    if (rt == 0){
+        rt = joystkInit();
+    } else {
+        printf("...[SysInit]Joy stick thread creation failed: %d\n", rt);
+    }
+
+
     //segDispInit();
     //
     //System start correctly
@@ -189,13 +230,14 @@ int main(int argc, char *argv[])
     }
 
 
-
+/*
 	rt = pthread_create(&js_thread, NULL,  (void *)&joystkInit, NULL);
     if( rt )
 	{
 		printf("Thread creation failed: %d\n", rt);
 		return -1;	
 	}
+*/
 
 	rt = pthread_create(&process_thread, NULL,  (void *)&process, NULL);
     if( rt )
@@ -204,12 +246,12 @@ int main(int argc, char *argv[])
 		return -1;	
 	}
 
-	pthread_join( js_thread, NULL);
+//	pthread_join( js_thread, NULL);
 	pthread_join( process_thread, NULL);
-
 	pthread_join( buzzer_thread, NULL);
 	pthread_join( digiDisplay_thread, NULL);
-	pthread_join( tcpServerThreadId, NULL);
+//	pthread_join( tcpServerThreadId, NULL);
 
+    tcpServerCleanup();
 	return 0;
 }

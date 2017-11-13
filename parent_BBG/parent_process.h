@@ -27,5 +27,6 @@ void setBbySoundLevel(int sound);
 int getBbySoundLevel(void);
 dispMode_t getDispMode(void);
 bool getSysInitStatus(void);
+bool getAlarmSleepStatus(void);
 
 #endif

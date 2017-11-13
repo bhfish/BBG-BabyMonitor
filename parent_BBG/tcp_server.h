@@ -6,5 +6,5 @@
 extern pthread_t tcpServerThreadId;
 
 int tcpServerInit(void);
-
+void tcpServerCleanup(void);
 #endif

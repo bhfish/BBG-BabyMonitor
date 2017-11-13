@@ -36,7 +36,7 @@ static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer);
 static void tcpServerTask(void);
 static int tcpServerBindPort(void);
 //static void test(void);
-static void tcpServerCleanup(void); 
+//static void tcpServerCleanup(void); 
 
 static void tcpServerTask(void)
 {
@@ -216,8 +216,12 @@ static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer)
 	}
 	else if(strcmp("alarm", buf_tokens[0]) == 0)
 	{
-        alarmTriggered = true;
-        printf("...[TCP]Alarm trigger received.\n");
+        if (getAlarmSleepStatus()) {
+            printf("...[TCP]Alarm in sleep mode, will not trigger alarm.\n");
+        } else {
+            alarmTriggered = true;
+            printf("...[TCP]Alarm trigger received.\n");
+        }
 	}
 	else if(strcmp("getParentBBGStatus", buf_tokens[0]) == 0)
 	{
@@ -243,9 +247,12 @@ static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer)
 	return res;
 }
 
-static void tcpServerCleanup(void){
+void tcpServerCleanup(void)
+{
 	close(socketfd);
 	close(newsocketfd);
+
+    pthread_join(tcpServerThreadId, NULL);
 }
 
 int tcpServerInit(void)
