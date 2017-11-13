@@ -1,8 +1,0 @@
-#!/bin/bash
-
-echo "Video for Beaglebone Video Applications - derekmolloy.ie"
-echo "Converting raw file to mpeg4 format"
-
-ffmpeg -f rawvideo -vcodec rawvideo -s 640x480 -r 25 -pix_fmt yuv420p -i output.raw -c:v libx264 -preset ultrafast -qp 0 output4-2.mp4
-
-echo "Finished"

@@ -1,14 +1,10 @@
 ﻿/*
- *  V4L2 video capture example, modified by Derek Molloy for the Logitech C920 camera
- *  Modifications, added the -F mode for H264 capture and associated help detail
- *  www.derekmolloy.ie
+ *  V4L2 video capture for the Logitech C270 camera
+ *  Modified by Baihui Zhang  
+ *  Modifications: modified the -F mode for MJPEG capture and -f mode for YUYV capture
  *
- *  V4L2 video capture example
- *
- *  This program can be used and distributed without restrictions.
- *
- *      This program is provided with the V4L2 API
- * see http://linuxtv.org/docs.php for more information
+ *  This program is provided with the V4L2 API
+ *  see http://linuxtv.org/docs.php for more information
  */
 
 #include <stdio.h>
@@ -491,14 +487,14 @@ static void init_device(void)
 	fprintf(stderr, "Force Format %d\n", force_format);
         if (force_format) {
 		if (force_format==2){
-             		fmt.fmt.pix.width       = 320;     
-           		fmt.fmt.pix.height      = 240;  
-  			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+             		fmt.fmt.pix.width       = 1280;     
+           		fmt.fmt.pix.height      = 720;  
+  			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
                 	fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 		}
 		else if(force_format==1){
-			fmt.fmt.pix.width	= 640;
-			fmt.fmt.pix.height	= 480;
+			fmt.fmt.pix.width	= 320;
+			fmt.fmt.pix.height	= 240;
 			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
 			fmt.fmt.pix.field	= V4L2_FIELD_NONE;
 		}
@@ -580,8 +576,8 @@ static void usage(FILE *fp, int argc, char **argv)
                  "-r | --read          Use read() calls\n"
                  "-u | --userp         Use application allocated buffers\n"
                  "-o | --output        Outputs stream to stdout\n"
-                 "-f | --format        Force format to 640x480 YUYV\n"
-		 "-F | --formatH264    Force format to 1920x1080 H264\n"
+                 "-f | --format        Force format to 640x480 YUYV 1\n"
+		 "-F | --formatH264    Force format to 1920x1080 H264 2\n"
                  "-c | --count         Number of frames to grab [%i] - use 0 for infinite\n"
                  "\n"
 		 "Example usage: capture -F -o -c 300 > output.raw\n"
