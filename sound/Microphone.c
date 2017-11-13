@@ -26,7 +26,7 @@ static void alertIfDecibelOutsideThreshHold();
 #define MAX_AMPLITUDE 32767
 #define MAX_DECIBEL_THRESH_HOLD 60
 
-static const snd_pcm_uframes_t PERIOD_SIZE = 4800;
+static const snd_pcm_uframes_t PERIOD_SIZE = 2400;
 
 static snd_pcm_t *pcmDevice;
 static snd_pcm_hw_params_t *deviceSettings;
@@ -132,8 +132,10 @@ static _Bool shouldStopListening() {
 }
 
 static void* listenOverMicrophone(void *args) {
-    connectToDevice();
-    initializeDeviceSettings();
+    if (!connectToDevice() || !initializeDeviceSettings()) {
+        printf("Error: unable to initialize device");
+        return NULL;
+    }
 
     snd_pcm_uframes_t bufferSize = 2 * PERIOD_SIZE * 2;
     short buffer[bufferSize];
@@ -145,7 +147,7 @@ static void* listenOverMicrophone(void *args) {
             return NULL;
         }
 
-        WaveStreamer_sendBuffer(buffer, bufferSize);
+        WaveStreamer_setBuffer(buffer, bufferSize);
         setCurrentDecibels(buffer, bufferSize);
         alertIfDecibelOutsideThreshHold();
     }

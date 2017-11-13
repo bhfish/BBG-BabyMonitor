@@ -7,15 +7,70 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <semaphore.h>
+#include <stdlib.h>
+#include <pthread.h>
+
+static _Bool initializeSocket();
+static void* waveStreamer(void* args);
+static _Bool sendBuffer();
+static void stopStreaming();
+static _Bool shouldStopStreaming();
 
 #define SERVER_IP "192.168.7.1"
 #define SERVER_PORT_NUMBER 1234
-#define MAX_BYTES_PER_PACKET 508
+#define MAX_BYTES_PER_PACKET 16384
 
 static int socketFd;
 static struct sockaddr_in serverAddress;
 
+static sem_t bufferFull;
+static sem_t bufferEmpty;
+static short* pcmBuffer = NULL;
+static int pcmBufferSize = 0;
+
+static pthread_t streamingThread;
+static pthread_mutex_t stopStreamingMutex = PTHREAD_MUTEX_INITIALIZER;
+static _Bool stopStreamingFlag = false;
+
 _Bool WaveStreamer_startStreaming() {
+	if (pthread_create(&streamingThread, NULL, &waveStreamer, NULL) != 0) {
+        printf("Error: failed to create new listener thread\n");
+        return false;
+    }
+
+    return true;
+}
+
+void WaveStreamer_stopStreaming() {
+	stopStreaming();
+
+	void* streamingThreadExitStatus;
+    if (pthread_join(streamingThread, &streamingThreadExitStatus) != 0) {
+        printf("Error: failed to join listener thread\n");
+    }
+
+    if (streamingThreadExitStatus != PTHREAD_CANCELED) {
+        printf("Error: thread has not been canceled, attempting to terminate thread\n");
+        if (pthread_cancel(streamingThread) != 0) {
+            printf("Error: thread failed to cancel\n");
+        }
+    }
+
+	close(socketFd);
+}
+
+void WaveStreamer_setBuffer(void* buffer, int bufferSize) {
+	sem_wait(&bufferEmpty);
+	{
+		pcmBufferSize = bufferSize;
+		pcmBuffer = (short *) malloc(pcmBufferSize);
+		memcpy(pcmBuffer, buffer, pcmBufferSize);
+	}
+	sem_post(&bufferFull);
+}
+
+static _Bool initializeSocket() {
 	serverAddress.sin_addr.s_addr = inet_addr(SERVER_IP);
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port = htons(SERVER_PORT_NUMBER);
@@ -42,12 +97,38 @@ _Bool WaveStreamer_startStreaming() {
 	return true;
 }
 
-void WaveStreamer_stopStreaming() {
-	close(socketFd);
+static void* waveStreamer(void* args) {
+	sem_init(&bufferFull, 0, 0);
+	sem_init(&bufferEmpty, 0, 1);
+
+	if (!initializeSocket()) {
+		printf("Error: unable to initialize UDP socket\n");
+		return NULL;
+	}
+
+	while (!shouldStopStreaming()) {
+		if (!sendBuffer()) {
+			printf("Error: unable to send buffer\n");
+			return NULL;
+		}
+	}
+
+	return NULL;
 }
 
-_Bool WaveStreamer_sendBuffer(void* buffer, int bufferSize) {
-	int packetsToSend = (bufferSize % MAX_BYTES_PER_PACKET == 0) ? bufferSize / MAX_BYTES_PER_PACKET : (bufferSize / MAX_BYTES_PER_PACKET) + 1;
+static _Bool sendBuffer() {
+	short* buffer = NULL;
+	int bufferSize = 0;
+	sem_wait(&bufferFull);
+    {
+    	bufferSize = pcmBufferSize;
+    	buffer = malloc(bufferSize);
+    	memcpy(buffer, pcmBuffer, bufferSize);
+    	free(pcmBuffer);
+    }
+    sem_post(&bufferEmpty);
+
+    int packetsToSend = (bufferSize % MAX_BYTES_PER_PACKET == 0) ? bufferSize / MAX_BYTES_PER_PACKET : (bufferSize / MAX_BYTES_PER_PACKET) + 1;
 	int packetSize = (bufferSize / MAX_BYTES_PER_PACKET == 0) ? MAX_BYTES_PER_PACKET : bufferSize % MAX_BYTES_PER_PACKET;
 	int finalPacketSize = (bufferSize % MAX_BYTES_PER_PACKET == 0) ? MAX_BYTES_PER_PACKET : bufferSize % MAX_BYTES_PER_PACKET;
 
@@ -59,5 +140,25 @@ _Bool WaveStreamer_sendBuffer(void* buffer, int bufferSize) {
 		}
 	}
 
+	free(buffer);
 	return true;
+}
+
+static void stopStreaming() {
+	pthread_mutex_lock(&stopStreamingMutex);
+    {
+        stopStreamingFlag = true;
+    }
+    pthread_mutex_unlock(&stopStreamingMutex);
+}
+
+static _Bool shouldStopStreaming() {
+	_Bool stopStreaming = false;
+	pthread_mutex_lock(&stopStreamingMutex);
+    {
+        stopStreaming = stopStreamingFlag;
+    }
+    pthread_mutex_unlock(&stopStreamingMutex);
+
+    return stopStreaming;
 }
