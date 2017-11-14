@@ -33,8 +33,6 @@ const GET_TEMPERATURE_DATASET_EVENT_NAME = "getTemperatureDataset"
 const MONITOR_BBG_FAILURE_EVENT_NAME = "monitorSystemFailure"
 const ALARM_BBG_FAILURE_EVENT_NAME = "alarmSystemFailure"
 
-const ALARM_BBG_LISTEN_PORT = 12345;
-const ALARM_BBG_LISTEN_ADDR = "192.168.3.1";
 const MONITOR_BBG_LISTEN_PORT = 8809;
 const MONITOR_BBG_LISTEN_ADDR = "127.0.0.1";
 const DATA_FILE_EXTENSION = ".csv"
@@ -46,9 +44,6 @@ const ALARM_BBG_SEND_REQUEST_TIME_OUT = 5000;
 
 var eventTimeoutArr = {};
 var monitorBBGSocket = dgram.createSocket('udp4');
-
-// tcp socket to alarm BBG
-var alarmBBGSocket = new net.Socket();
 var io;
 
 // wait for the C server program which runs in monitor BBG to send responses to me
@@ -56,20 +51,10 @@ exports.listen = function(server) {
     io = socketio.listen(server);
     io.set('log level 1');
 
-    // connect to alarm BBG
-    alarmBBGSocket.connect(ALARM_BBG_LISTEN_PORT, ALARM_BBG_LISTEN_ADDR);
-
-    // fired upon a connection failure to the alarm BBG
-    alarmBBGSocket.on('error', function(err){
-        console.log("[ERROR] not able to connect to alarm BBG at this moment");
-        alarmBBGSocket.connect(ALARM_BBG_LISTEN_PORT, ALARM_BBG_LISTEN_ADDR);
-    });
-
     // fired upon a connection from client
     io.sockets.on('connection', function(clientWebSocket) {
         waitForClientUIRequest(clientWebSocket);
         redirectMonitorBBGResponseToClient(clientWebSocket);
-        redirectAlarmBBGRunningStatusToClient(clientWebSocket);
     });
 };
 
@@ -81,6 +66,15 @@ function waitForClientUIRequest(clientWebSocket) {
 
         sendRequestToMonitorBBG(GET_MONITOR_BBG_STATUS_EVENT_NAME + "\n");
     });
+
+    clientWebSocket.on(GET_ALARM_BBG_STATUS_EVENT_NAME, function() {
+        eventTimeoutArr[GET_ALARM_BBG_STATUS_EVENT_NAME] = setTimeout(function(){
+            sendMessageToClient(clientWebSocket, ALARM_BBG_FAILURE_EVENT_NAME, null);
+        }, ALARM_BBG_SEND_REQUEST_TIME_OUT);
+
+        sendRequestToMonitorBBG(GET_ALARM_BBG_STATUS_EVENT_NAME + "\n");
+    });
+
 
     clientWebSocket.on(GET_TEMPERATURE_EVENT_NAME, function() {
         eventTimeoutArr[GET_TEMPERATURE_EVENT_NAME] = setTimeout(function(){
@@ -100,14 +94,6 @@ function waitForClientUIRequest(clientWebSocket) {
 
     clientWebSocket.on(GET_TEMPERATURE_DATASET_EVENT_NAME, function() {
         clientWebSocket.emit( GET_TEMPERATURE_DATASET_EVENT_NAME, getDatasetFromFile(TEMPERATURE_DATA_FILE_NAME) );
-    });
-
-    clientWebSocket.on(GET_ALARM_BBG_STATUS_EVENT_NAME, function() {
-        eventTimeoutArr[GET_ALARM_BBG_STATUS_EVENT_NAME] = setTimeout(function(){
-            sendMessageToClient(clientWebSocket, ALARM_BBG_FAILURE_EVENT_NAME, null);
-        }, ALARM_BBG_SEND_REQUEST_TIME_OUT);
-
-        sendRequestToAlarmBBG(GET_ALARM_BBG_STATUS_EVENT_NAME);
     });
 };
 
@@ -136,22 +122,6 @@ function redirectMonitorBBGResponseToClient(clientWebSocket) {
         clearTimeout(eventTimeoutArr[eventName]);
         clientWebSocket.emit(eventName, messageContent);
     });
-}
-
-/*
-    TODO: just for now, only one request from nodejs server to alarm BBG which is its status. need to make this function more generic as
-    redirectMonitorBBGResponseToClient
-*/
-function redirectAlarmBBGRunningStatusToClient(clientWebSocket) {
-    // fired when alarm BBG sends back message
-    alarmBBGSocket.on('data', function(messageToHost){
-        clearTimeout(eventTimeoutArr[eventName]);
-        clientWebSocket.emit(GET_ALARM_BBG_STATUS_EVENT_NAME, messageContent);
-    });
-}
-
-function sendMessageToClient(clientWebSocket, EVENT_NAME, message) {
-    clientWebSocket.emit(EVENT_NAME, message);
 }
 
 function getDatasetFromFile(dataFileName){

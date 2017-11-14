@@ -13,7 +13,7 @@
 #define MAX_SEND_MSG_LEN            500
 
 // TODO: change it later
-#define PARENT_BBG_IPV4_ADDR        "192.168.3.2"
+#define PARENT_BBG_IPV4_ADDR        "192.168.3.1"
 #define PARENT_BBG_PORT_NUM         12345
 
 static int clientSocketFD;
@@ -36,9 +36,8 @@ _Bool TCPSender_init(void)
 _Bool TCPSender_sendDataToParentBBG(int dataToSend, DATA_CATEGORY CATEGORY)
 {
     char msgToParentBBG[MAX_SEND_MSG_LEN] = {0};
-    char formatedMsg[MAX_SEND_MSG_LEN] = {0};
 
-    getFormatedMsg(dataToSend, CATEGORY, formatedMsg);
+    getFormatedMsg(dataToSend, CATEGORY, msgToParentBBG);
 
     if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT) == -1) {
         printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));

@@ -9,14 +9,20 @@
 #include "dataRecorder.h"
 #include "temperatureMonitor.h"
 
-#define TMP36_AIN_NUM                       3
+#define TMP36_AIN_NUM                           3
 
 // reference from https://www.lullabytrust.org.uk/safer-sleep-advice/baby-room-temperature/
-#define MAX_TEMPERATURE_IN_CELSIUS_ALLOW    20
-#define MIN_TEMPERATURE_IN_CELSIUS_ALLOW    16
-#define REF_VOLTAGE                         1.8
+#define MAX_TEMPERATURE_IN_CELSIUS_ALLOW        20
 
-#define MONITOR_TIME_INTERVAL_IN_S          1
+#ifdef DEMO_MODE
+    #define MIN_TEMPERATURE_IN_CELSIUS_ALLOW    10
+#else
+    #define MIN_TEMPERATURE_IN_CELSIUS_ALLOW    16
+#endif
+
+#define REF_VOLTAGE                             1.8
+
+#define MONITOR_TIME_INTERVAL_IN_S              1
 
 static pthread_t temperatureThread;
 static _Bool stopMonitoring = false;
@@ -94,19 +100,20 @@ static void *startTemperatureThread(void *args)
 
         convertedVoltageVal = covertAnalogToVoltage(A2DReadingVal);
         currentTemperature = covertVoltageToTemperature(convertedVoltageVal);
+        printf("current room temperature is: %d\n", currentTemperature);
 
-        // if (currentTemperature < MIN_TEMPERATURE_IN_CELSIUS_ALLOW || currentTemperature > MAX_TEMPERATURE_IN_CELSIUS_ALLOW) {
+        if (currentTemperature < MIN_TEMPERATURE_IN_CELSIUS_ALLOW || currentTemperature > MAX_TEMPERATURE_IN_CELSIUS_ALLOW) {
 
-        //     // CRITICAL as we don't tolerate any failures returned by the send function
-        //     printf("[WARN] detect abnormal temperature!\n");
+            // CRITICAL as we don't tolerate any failures returned by the send function
+            printf("[WARN] detect abnormal temperature!\n");
 
-        //     // if this failed, there is nothing we can do much from baby's BBG side
-        //     TCPSender_sendAlarmRequestToParentBBG();
-        // }
-        // else {
-        //     // it's ok to tolerate any failures returned by the send function since it is not critical
-        //     TCPSender_sendDataToParentBBG(currentTemperature, TEMPERATURE);
-        // }
+            // if this failed, there is nothing we can do much from baby's BBG side
+            TCPSender_sendAlarmRequestToParentBBG();
+        }
+        else {
+            // it's ok to tolerate any failures returned by the send function since it is not critical
+            TCPSender_sendDataToParentBBG(currentTemperature, TEMPERATURE);
+        }
 
         nanosleep(&monitorTime, &remainTime);
     }

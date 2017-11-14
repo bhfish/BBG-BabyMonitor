@@ -176,7 +176,7 @@ static void setCurrentDecibels(short *buffer, int bufferSize) {
     }
     pthread_mutex_unlock(&currentDecibelMutex);
 
-    printf("\r current amplitude: %f current decibel: %d", averageAmplitude, Microphone_getCurrentDecibel());
+    printf("\r current amplitude: %f current decibel: %d\n", averageAmplitude, Microphone_getCurrentDecibel());
     fflush(stdout);
 }
 
@@ -187,6 +187,6 @@ static void alertIfDecibelOutsideThreshHold() {
         TCPSender_sendAlarmRequestToParentBBG();
     }
     else {
-        TCPSender_sendDataToParentBBG(SOUND, decibel);
+        TCPSender_sendDataToParentBBG(decibel, SOUND);
     }
 }

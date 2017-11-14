@@ -55,4 +55,4 @@ function sendFile(response, filePath, fileContents) {
 }
 
 var beatboxServer = require('./lib/serverLib.js');
-beatboxServer.listen(server);
+beatboxServer.listen(server, {'destroy buffer size': Infinity});

@@ -69,11 +69,12 @@ static void startBabyMonitor(void)
     if ( !Microphone_startListening() ) {
         printf("[ERROR] failed to init microphone module\n");
     }
-    // if ( !TCPSender_init() ) {
-    //     printf("[ERROR] failed to init sender module\n");
 
-    //     return;
-    // }
+    if ( !TCPSender_init() ) {
+        printf("[ERROR] failed to init sender module\n");
+
+        return;
+    }
 
     if ( !UDPListener_startListening() ) {
         printf("[ERROR] failed to init UDP listener module\n");
