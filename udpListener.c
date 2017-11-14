@@ -12,6 +12,7 @@
 #include <arpa/inet.h>  // inet_ntoa
 #include <netdb.h>      // sockaddr_in
 #include <fcntl.h>      // fcntl
+#include "tcpSender.h"
 #include "temperatureMonitor.h"
 #include "udpListener.h"
 #include "babyMonitor.h"
@@ -94,7 +95,7 @@ static void SendResponseMsgToClient(void *response, size_t responseLen, int clie
     }
 
     #ifdef DEBUG_MODE
-        printf("[DEBUG] sent %s\n", (char*) response);
+        printf("[DEBUG] sent %s to client's address %s\n", (char*) response, inet_ntoa(clientAddr.sin_addr));
     #endif
 }
 
@@ -102,20 +103,35 @@ static void SendResponseMsgToClient(void *response, size_t responseLen, int clie
 static void RespondClientsRequest(char *clientRequest, int clientFd, struct sockaddr_in clientAddr)
 {
     char responseMsg[MAX_RESPONSE_MSG_LENGTH] = {0};
+    int currentTemperature, currentDecibel;
 
     if (strcmp(clientRequest, "getMonitorBBGStatus") == 0) {
         if ( BabayMonitor_isSystemRunning() ) {
-            sprintf(responseMsg, "getMonitorBBGStatus:Active");
+            sprintf(responseMsg, "%s:Active", clientRequest);
         }
         else {
-            sprintf(responseMsg, "getMonitorBBGStatus:Inactive");
+            sprintf(responseMsg, "%s:Inactive", clientRequest);
         }
     }
     else if (strcmp(clientRequest, "getTemperature") == 0) {
-        sprintf(responseMsg, "getTemperature:%d", TemperatureMonitor_getCurrentTemperature());
+        currentTemperature = TemperatureMonitor_getCurrentTemperature();
+
+        if ( TemperatureMonitor_isTemperatureNormal(currentTemperature) ) {
+            sprintf(responseMsg, "getTemperature:%d", currentTemperature);
+        }
+        else {
+            sprintf(responseMsg, "getTemperature:%d (Abnormal)", currentTemperature);
+        }
     }
     else if (strcmp(clientRequest, "getDecibel") == 0) {
-        sprintf(responseMsg, "getDecibel:%d", Microphone_getCurrentDecibel());
+        currentDecibel = Microphone_getCurrentDecibel();
+
+        if ( Microphone_isDecibelNormal(currentDecibel) ) {
+            sprintf(responseMsg, "getDecibel:%d", currentDecibel);
+        }
+        else {
+            sprintf(responseMsg, "getDecibel:%d (Abnormal)", currentDecibel);
+        }
     }
 
     SendResponseMsgToClient(responseMsg, strlen(responseMsg), clientFd, clientAddr);

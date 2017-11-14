@@ -24,7 +24,7 @@
 _Bool TCPSender_init(void);
 
 // send specified data to parent's BBG via TCP socket
-_Bool TCPSender_sendDataToParentBBG(int dataToSend, DATA_CATEGORY CATEGORY);
+_Bool TCPSender_sendDataToParentBBG(DATA_CATEGORY CATEGORY, int dataToSend);
 
 // send alarm request to parent's BBG via TCP socket
 _Bool TCPSender_sendAlarmRequestToParentBBG(void);

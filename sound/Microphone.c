@@ -27,6 +27,7 @@ static void alertIfDecibelOutsideThreshHold();
 #define DB_OFFSET 72
 #define MAX_AMPLITUDE 32767
 #define MAX_DECIBEL_THRESH_HOLD 60
+#define MIN_DECIBEL_THRESH_HOLD 0
 
 static const snd_pcm_uframes_t PERIOD_SIZE = 2400;
 
@@ -81,6 +82,14 @@ int Microphone_getCurrentDecibel() {
     pthread_mutex_unlock(&currentDecibelMutex);
 
     return (int) ceil(decibel);
+}
+
+_Bool Microphone_isDecibelNormal(int decibel) {
+    if (decibel > MAX_DECIBEL_THRESH_HOLD || decibel < MIN_DECIBEL_THRESH_HOLD) {
+        return false;
+    }
+
+    return true;
 }
 
 static _Bool connectToDevice() {
@@ -182,11 +191,10 @@ static void setCurrentDecibels(short *buffer, int bufferSize) {
 
 static void alertIfDecibelOutsideThreshHold() {
     int decibel = Microphone_getCurrentDecibel();
-    if (decibel > MAX_DECIBEL_THRESH_HOLD) {
-        printf("Decibel is out side of thresh hold with value of: %d\n", decibel);
+    if ( !Microphone_isDecibelNormal(decibel)) {
+        printf("Decibel is out side of the threshold with value of: %d\n", decibel);
         TCPSender_sendAlarmRequestToParentBBG();
     }
-    else {
-        TCPSender_sendDataToParentBBG(decibel, SOUND);
-    }
+
+    TCPSender_sendDataToParentBBG(SOUND, decibel);
 }

@@ -11,6 +11,7 @@
 #include "tcpSender.h"
 
 #define MAX_SEND_MSG_LEN            500
+#define MAX_RECV_MSG_LEN            500
 
 // TODO: change it later
 #define PARENT_BBG_IPV4_ADDR        "192.168.3.1"
@@ -19,7 +20,7 @@
 static int clientSocketFD;
 static struct sockaddr_in parentBBGAddr;
 
-static void getFormatedMsg(int dataVal, DATA_CATEGORY CATEGORY, char *message);
+static void getFormatedMsg(DATA_CATEGORY CATEGORY, int dataVal, char *message);
 static _Bool initTCPSocket(void);
 
 _Bool TCPSender_init(void)
@@ -33,11 +34,11 @@ _Bool TCPSender_init(void)
     return true;
 }
 
-_Bool TCPSender_sendDataToParentBBG(int dataToSend, DATA_CATEGORY CATEGORY)
+_Bool TCPSender_sendDataToParentBBG(DATA_CATEGORY CATEGORY, int dataToSend)
 {
     char msgToParentBBG[MAX_SEND_MSG_LEN] = {0};
 
-    getFormatedMsg(dataToSend, CATEGORY, msgToParentBBG);
+    getFormatedMsg(CATEGORY, dataToSend, msgToParentBBG);
 
     if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT) == -1) {
         printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
@@ -98,7 +99,7 @@ static _Bool initTCPSocket(void)
 }
 
 // format the data into string format of "<data category>:<data value>;"
-static void getFormatedMsg(int dataVal, DATA_CATEGORY CATEGORY, char *message)
+static void getFormatedMsg(DATA_CATEGORY CATEGORY, int dataVal, char *message)
 {
     switch (CATEGORY) {
         case TEMPERATURE:

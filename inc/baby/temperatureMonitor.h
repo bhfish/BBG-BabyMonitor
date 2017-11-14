@@ -13,6 +13,9 @@ _Bool TemperatureMonitor_startMonitoring(void);
 // get current baby's room temperature
 int TemperatureMonitor_getCurrentTemperature(void);
 
+// return whether specified temperature is out of range/abnormal
+_Bool TemperatureMonitor_isTemperatureNormal(int temperature);
+
 // stop the tread and exit gracefully
 void TemperatureMonitor_stopMonitoring(void);
 
