@@ -181,15 +181,15 @@ static void mainloop(void)
         while ((count-- > 0) || loopIsInfinite) {
                 for (;;) {
                         fd_set fds;
-                        struct timeval tv;
+                        //struct timeval tv;  //comment out because it is defined but no used
                         int r;
 
                         FD_ZERO(&fds);
                         FD_SET(fd, &fds);
 
                         /* Timeout. */
-                        tv.tv_sec = 2;
-                        tv.tv_usec = 0;
+                        //tv.tv_sec = 2;//comment out because it is defined but no used
+                        //tv.tv_usec = 0;//comment out because it is defined but no used
 
                         r = select(fd + 1, &fds, NULL, NULL, NULL);
 
@@ -491,14 +491,14 @@ static void init_device(void)
 	fprintf(stderr, "Force Format %d\n", force_format);
         if (force_format) {
 		if (force_format==2){
-             		fmt.fmt.pix.width       = 320;     
-           		fmt.fmt.pix.height      = 240;  
-  			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+             		fmt.fmt.pix.width       = 1280;     
+           		fmt.fmt.pix.height      = 720;  
+  			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
                 	fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 		}
 		else if(force_format==1){
-			fmt.fmt.pix.width	= 640;
-			fmt.fmt.pix.height	= 480;
+			fmt.fmt.pix.width	= 320;
+			fmt.fmt.pix.height	= 240;
 			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
 			fmt.fmt.pix.field	= V4L2_FIELD_NONE;
 		}
@@ -580,8 +580,8 @@ static void usage(FILE *fp, int argc, char **argv)
                  "-r | --read          Use read() calls\n"
                  "-u | --userp         Use application allocated buffers\n"
                  "-o | --output        Outputs stream to stdout\n"
-                 "-f | --format        Force format to 640x480 YUYV\n"
-		 "-F | --formatH264    Force format to 1920x1080 H264\n"
+                 "-f | --format        Force format to 640x480 YUYV 1\n"
+		 "-F | --formatH264    Force format to 1920x1080 H264 2\n"
                  "-c | --count         Number of frames to grab [%i] - use 0 for infinite\n"
                  "\n"
 		 "Example usage: capture -F -o -c 300 > output.raw\n"

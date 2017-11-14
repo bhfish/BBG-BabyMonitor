@@ -10,6 +10,7 @@
 #include "temperatureMonitor.h"
 #include "accelerometerMonitor.h"
 #include "Microphone.h"
+#include "videoStreaming.h"
 
 static _Bool restartReqSent = false;
 static _Bool isSystemRunning = false;
@@ -54,11 +55,16 @@ static void startBabyMonitor(void)
 {
     /*
         baby's BBG startup sequence should follow the order of
-        1) video TODO
+        
         2) sender
         3) UDP server (user web interface) TODO
         4) other modules
     */
+	
+    if ( !Video_startStreaming() ) {
+        printf("[ERROR] failed to init video module\n");
+    }
+	
 
     if ( !Microphone_startListening() ) {
         printf("[ERROR] failed to init microphone module\n");
@@ -101,7 +107,7 @@ static void stopBabyMonitor(void)
 {
     isSystemRunning = false;
 
-    // TODO: video
+    Video_stopStreaming();
     TCPSender_cleanUp();
     AccelerometerMonitor_stopMonitoring();
     TemperatureMonitor_stopMonitoring();

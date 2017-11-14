@@ -25,6 +25,13 @@
         <div id='left-box'>
             <div id='modediv'>
                 <!-- TODO: video streaming section -->
+		<embed type="application/x-vlc-plugin" pluginspage="http://www.videolan.org" version="VideoLAN.VLCPlugin.2" width="1280" height="720" id="vlc"</embed>
+<script>
+var vlc = document.getElementById("vlc");
+vlc.playlist.add("udp://@:1234", "baby-monitor");
+vlc.playlist.play();
+vlc.video.deinterlace.enable("blend");
+</script>
             </div>
 
         </div>

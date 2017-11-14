@@ -1,11 +1,11 @@
 CFLAGS= -lv4l2
 CC=gcc $(CFLAGS)
 
-all: capture
+all: captureVideo
 
 capture:
-	$(CC) capture.c -o capture
+	$(CC) captureVideo.c -o captureVideo
 
 clean:
-	rm -f capture capture.o
+	rm -f captureVideo captureVideo.o
 
