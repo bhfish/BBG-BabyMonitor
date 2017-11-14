@@ -2,39 +2,94 @@
 // Created by vincent on 10/22/17.
 //
 
-#include<alsa/asoundlib.h>
-#include<math.h>
-#include<stdbool.h>
+#include "WaveStreamer.h"
+#include <alsa/asoundlib.h>
+#include <math.h>
+#include <stdbool.h>
 #include <alloca.h>
+#include <pthread.h>
+#include <string.h>
+#include "monitorData.h"
+#include "tcpSender.h"
 
+static _Bool connectToDevice();
 static _Bool initializeDeviceSettings();
 static double getAverageAmplitude();
-static double getAverageDecibels(double averageAmplitude);
+static void* listenOverMicrophone(void *args);
+static void stopListening();
+static _Bool shouldStopListening();
+static void setCurrentDecibels(short *buffer, int bufferSize);
+static void alertIfDecibelOutsideThreshHold();
 
 #define PCM_DEVICE_NAME "plughw:U0x46d0x825,0"
 #define SAMPLE_RATE_IN_HERTZ 48000
 #define NUMBER_OF_CHANNELS 1
+#define DB_OFFSET 72
+#define MAX_AMPLITUDE 32767
+#define MAX_DECIBEL_THRESH_HOLD 60
 
-static const snd_pcm_uframes_t PERIOD_SIZE = 4800;
+static const snd_pcm_uframes_t PERIOD_SIZE = 2400;
 
 static snd_pcm_t *pcmDevice;
 static snd_pcm_hw_params_t *deviceSettings;
 
-_Bool Microphone_Initialize() {
-    if (snd_pcm_open(&pcmDevice, PCM_DEVICE_NAME, SND_PCM_STREAM_CAPTURE, 0) < 0) {
-        printf("Error: unable to open PCM device");
+static pthread_t listenerThread;
+static pthread_mutex_t stopListeningMutex = PTHREAD_MUTEX_INITIALIZER;
+static _Bool stopListeningFlag = false;
+
+static pthread_mutex_t currentDecibelMutex = PTHREAD_MUTEX_INITIALIZER;
+static double currentDecibel;
+
+_Bool Microphone_startListening() {
+    if (pthread_create(&listenerThread, NULL, &listenOverMicrophone, NULL) != 0) {
+        printf("Error: failed to create new listener thread\n");
         return false;
     }
 
-    if (!initializeDeviceSettings()) {
+    if (!WaveStreamer_startStreaming()) {
         return false;
     }
 
     return true;
 }
 
-void Microphone_Stop() {
+void Microphone_stopListening() {
+    stopListening();
+
+    void* listenerThreadExitStatus;
+    if (pthread_join(listenerThread, &listenerThreadExitStatus) != 0) {
+        printf("Error: failed to join listener thread\n");
+    }
+
+    if (listenerThreadExitStatus != PTHREAD_CANCELED) {
+        printf("Error: thread has not been canceled, attempting to terminate thread\n");
+        if (pthread_cancel(listenerThread) != 0) {
+            printf("Error: thread failed to cancel\n");
+        }
+    }
+
+    WaveStreamer_stopStreaming();
     snd_pcm_close(pcmDevice);
+}
+
+int Microphone_getCurrentDecibel() {
+    double decibel = 0.0;
+    pthread_mutex_lock(&currentDecibelMutex);
+    {
+        decibel = currentDecibel;
+    }
+    pthread_mutex_unlock(&currentDecibelMutex);
+
+    return (int) ceil(decibel);
+}
+
+static _Bool connectToDevice() {
+    if (snd_pcm_open(&pcmDevice, PCM_DEVICE_NAME, SND_PCM_STREAM_CAPTURE, 0) < 0) {
+        printf("Error: unable to open PCM device\n");
+        return false;
+    }
+
+    return true;
 }
 
 static _Bool initializeDeviceSettings() {
@@ -58,6 +113,50 @@ static _Bool initializeDeviceSettings() {
     return true;
 }
 
+static void stopListening() {
+    pthread_mutex_lock(&stopListeningMutex);
+    {
+        stopListeningFlag = true;
+    }
+    pthread_mutex_unlock(&stopListeningMutex);
+}
+
+static _Bool shouldStopListening() {
+    _Bool stopListening;
+
+    pthread_mutex_lock(&stopListeningMutex);
+    {
+        stopListening = stopListeningFlag;
+    }
+    pthread_mutex_unlock(&stopListeningMutex);
+
+    return stopListening;
+}
+
+static void* listenOverMicrophone(void *args) {
+    if (!connectToDevice() || !initializeDeviceSettings()) {
+        printf("Error: unable to initialize device");
+        return NULL;
+    }
+
+    snd_pcm_uframes_t bufferSize = 2 * PERIOD_SIZE * 2;
+    short buffer[bufferSize];
+    while (!shouldStopListening()) {
+        snd_pcm_sframes_t frames;
+        frames = snd_pcm_readi(pcmDevice, &buffer, bufferSize);
+        if (frames < 0) {
+            printf("Error: reading frames (%s)\n", snd_strerror(frames));
+            return NULL;
+        }
+
+        WaveStreamer_setBuffer(buffer, bufferSize);
+        setCurrentDecibels(buffer, bufferSize);
+        alertIfDecibelOutsideThreshHold();
+    }
+
+    return NULL;
+}
+
 static double getAverageAmplitude(short *buffer, int bufferSize) {
     long long amplitudeSquareSum = 0LL;
     for (int i = 0 ; i < bufferSize ; i++) {
@@ -67,26 +166,27 @@ static double getAverageAmplitude(short *buffer, int bufferSize) {
     return sqrt((amplitudeSquareSum / (double) bufferSize));
 }
 
-static double getAverageDecibels(double averageAmplitude) {
-    return 20 * log10(averageAmplitude);
+static void setCurrentDecibels(short *buffer, int bufferSize) {
+    double averageAmplitude = getAverageAmplitude(buffer, bufferSize);
+    double averageDecibels = (20 * log10(averageAmplitude / MAX_AMPLITUDE)) + DB_OFFSET;
+
+    pthread_mutex_lock(&currentDecibelMutex);
+    {
+        currentDecibel = averageDecibels;
+    }
+    pthread_mutex_unlock(&currentDecibelMutex);
+
+    printf("\r current amplitude: %f current decibel: %d", averageAmplitude, Microphone_getCurrentDecibel());
+    fflush(stdout);
 }
 
-void* sendAverageDecibels() {
-    snd_pcm_uframes_t bufferSize = 2 * PERIOD_SIZE * 2;
-    short buffer[bufferSize];
-    while (1) {
-        snd_pcm_sframes_t frames;
-        frames = snd_pcm_readi(pcmDevice, &buffer, bufferSize);
-        if (frames < 0) {
-            printf("Error: reading frames (%s)\n", snd_strerror(frames));
-            break;
-        }
-
-        double averageAmplitude = getAverageAmplitude(buffer, bufferSize);
-        double averageDecibels = getAverageDecibels(averageAmplitude);
-        printf("\r current amplitude: %f current decibel: %f", averageAmplitude, averageDecibels);
-        fflush(stdout);
+static void alertIfDecibelOutsideThreshHold() {
+    int decibel = Microphone_getCurrentDecibel();
+    if (decibel > MAX_DECIBEL_THRESH_HOLD) {
+        printf("Decibel is out side of thresh hold with value of: %d\n", decibel);
+        TCPSender_sendAlarmRequestToParentBBG();
     }
-
-    return NULL;
+    else {
+        TCPSender_sendDataToParentBBG(SOUND, decibel);
+    }
 }
