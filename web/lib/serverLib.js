@@ -51,6 +51,8 @@ var monitorBBGSocket = dgram.createSocket('udp4');
 // TCP socket to alarm BBG
 var alarmBBGSocket = new net.Socket();
 var io;
+var prevTemperatureDataFileContent = undefined;
+var prevSoundDataFileContent = undefined;
 
 // wait for the C server program which runs in monitor BBG to send responses to me
 exports.listen = function(server) {
@@ -144,7 +146,7 @@ function redirectMonitorBBGResponseToClient(clientWebSocket) {
         messageToHost = messageToHost.toString('utf8');
         messageToHost = messageToHost.split(":");
         var eventName = messageToHost[0];
-        var messageContent =messageToHost[1];
+        var messageContent = messageToHost[1];
 
         clearTimeout(eventTimeoutArr[eventName]);
         clientWebSocket.emit(eventName, messageContent);
@@ -158,7 +160,7 @@ function redirectAlarmBBGResponseToClient(clientWebSocket) {
         messageToHost = messageToHost.split(":");
 
         var eventName = messageToHost[0];
-        var messageContent =messageToHost[1];
+        var messageContent = messageToHost[1];
 
         clearTimeout(eventTimeoutArr[eventName]);
         clientWebSocket.emit(eventName, messageContent);
@@ -175,12 +177,20 @@ function getDatasetFromFile(dataFileName){
     var datasetObj;
     var dateObj;
 
+    if (prevTemperatureDataFileContent && dataFileName == TEMPERATURE_DATA_FILE_NAME) {
+        var startingLineNum = prevTemperatureDataFileContent.length;
+    } else if (prevSoundDataFileContent && dataFileName == SOUND_DATA_FILE_NAME) {
+        var startingLineNum = prevSoundDataFileContent.length;
+    } else {
+        var startingLineNum = 0;
+    }
+
     if ( fs.existsSync(dataFilePath) ) {
         fileContent = fs.readFileSync(dataFilePath).toString();
 
         if (fileContent) {
             // parse file content line-by-line
-            for (var i = 0; i < fileContent.length; i++) {
+            for (var i = startingLineNum; i < fileContent.length; i++) {
 
                 if (fileContent[i] != "\n") {
                     lineContent += fileContent[i];
@@ -198,6 +208,12 @@ function getDatasetFromFile(dataFileName){
             datasetObj = {
                 timestamp: timestampArr,
                 dataset: datasetArr
+            }
+
+            if (dataFileName == TEMPERATURE_DATA_FILE_NAME) {
+                prevTemperatureDataFileContent = fileContent;
+            } else if (dataFileName == SOUND_DATA_FILE_NAME) {
+                prevSoundDataFileContent = fileContent;
             }
 
             return datasetObj;

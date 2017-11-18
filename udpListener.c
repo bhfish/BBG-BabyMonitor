@@ -117,20 +117,20 @@ static void RespondClientsRequest(char *clientRequest, int clientFd, struct sock
         currentTemperature = TemperatureMonitor_getCurrentTemperature();
 
         if ( TemperatureMonitor_isTemperatureNormal(currentTemperature) ) {
-            sprintf(responseMsg, "getTemperature:%d", currentTemperature);
+            sprintf(responseMsg, "getTemperature:%d °C", currentTemperature);
         }
         else {
-            sprintf(responseMsg, "getTemperature:%d (Abnormal)", currentTemperature);
+            sprintf(responseMsg, "getTemperature:%d °C (Abnormal)", currentTemperature);
         }
     }
     else if (strcmp(clientRequest, "getDecibel") == 0) {
         currentDecibel = Microphone_getCurrentDecibel();
 
         if ( Microphone_isDecibelNormal(currentDecibel) ) {
-            sprintf(responseMsg, "getDecibel:%d", currentDecibel);
+            sprintf(responseMsg, "getDecibel:%d dB", currentDecibel);
         }
         else {
-            sprintf(responseMsg, "getDecibel:%d (Abnormal)", currentDecibel);
+            sprintf(responseMsg, "getDecibel:%d dB (Abnormal)", currentDecibel);
         }
     }
 
