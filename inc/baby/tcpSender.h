@@ -7,7 +7,7 @@
     "<data type>:<data value>;"
     e.g. "temperature:23;" or "sound:77;"
     or alarm
-    e.g. "alarm:temperature:23"
+    e.g. "alarm:;"
 
     NOTE:
     this module will not be responsible for checking the validity and integrity of such data
