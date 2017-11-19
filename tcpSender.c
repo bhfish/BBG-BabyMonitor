@@ -8,6 +8,7 @@
 #include <unistd.h>     // close
 #include <netdb.h>      // sockaddr_in
 #include <arpa/inet.h>  // inet_pton
+#include <signal.h>     // sigignore
 #include "tcpSender.h"
 
 #define MAX_SEND_MSG_LEN            500
@@ -19,17 +20,23 @@
 
 static int clientSocketFD;
 static struct sockaddr_in parentBBGAddr;
+static _Bool wasConnectionSuccess;
 
 static void getFormatedMsg(DATA_CATEGORY CATEGORY, int dataVal, char *message);
+static void keepTCPClientAlive(int connectionErrNum);
+static void reconnectToParentBBG(void);
 static _Bool initTCPSocket(void);
 
 _Bool TCPSender_init(void)
 {
     if ( !initTCPSocket() ) {
         printf("[ERROR] failed to initialize a client socket to communicate to parent's BBG\n");
+        wasConnectionSuccess = false;
 
         return false;
     }
+
+    wasConnectionSuccess = true;
 
     return true;
 }
@@ -40,8 +47,13 @@ _Bool TCPSender_sendDataToParentBBG(DATA_CATEGORY CATEGORY, int dataToSend)
 
     getFormatedMsg(CATEGORY, dataToSend, msgToParentBBG);
 
-    if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT) == -1) {
+    if (!wasConnectionSuccess) {
+        reconnectToParentBBG();
+    }
+
+    if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT| MSG_NOSIGNAL) == -1) {
         printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
+        keepTCPClientAlive(errno);
 
         return false;
     }
@@ -51,10 +63,17 @@ _Bool TCPSender_sendDataToParentBBG(DATA_CATEGORY CATEGORY, int dataToSend)
 
 _Bool TCPSender_sendAlarmRequestToParentBBG(void)
 {
-    char *msgToParentBBG = "alarm";
+    char msgToParentBBG[MAX_SEND_MSG_LEN] = {0};
 
-    if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT) == -1) {
+    sprintf(msgToParentBBG, "%s%c%c", "alarm", DATA_CATEGORY_VALUE_SEPERATOR, END_OF_DATA_VALUE_SEPERATOR);
+
+    if (!wasConnectionSuccess) {
+        reconnectToParentBBG();
+    }
+
+    if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT | MSG_NOSIGNAL) == -1) {
         printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
+        keepTCPClientAlive(errno);
 
         return false;
     }
@@ -116,4 +135,28 @@ static void getFormatedMsg(DATA_CATEGORY CATEGORY, int dataVal, char *message)
 
             break;
     }
+}
+
+// by default, TCP client will be killed if it tried to send to a disconnected host. Handle this by ignoring the corresponding "kill" signal
+static void keepTCPClientAlive(int connectionErrNum)
+{
+    /*
+        SIGPIPE action: termination; Broken pipe: write to pipe with no readers
+        EPIPE  The local end has been shut down on a connection oriented socket.
+    */
+    if (connectionErrNum == EPIPE) {
+        /*
+            the entire monitoring system shouldn't be killed as user may still need to
+            be able to access to baby's video streaming
+        */
+        signal(SIGPIPE, SIG_IGN);
+        wasConnectionSuccess = false;
+    }
+}
+
+// re-establish the connection to parent's BBG
+static void reconnectToParentBBG()
+{
+    TCPSender_cleanUp();
+    TCPSender_init();
 }
