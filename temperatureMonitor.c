@@ -25,7 +25,7 @@
 #define MONITOR_TIME_INTERVAL_IN_S              1
 
 static pthread_t temperatureThread;
-// static pthread_mutex_t currentTemperatureMutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t currentTemperatureMutex = PTHREAD_MUTEX_INITIALIZER;
 static _Bool stopMonitoring = false;
 static int currentTemperature;
 
@@ -52,13 +52,15 @@ _Bool TemperatureMonitor_startMonitoring(void)
 
 int TemperatureMonitor_getCurrentTemperature(void)
 {
-    printf("get TEMPERATURE\n");
-    // pthread_mutex_lock(&currentTemperatureMutex);
-    // {
-        return currentTemperature;
-    // }
-    // pthread_mutex_unlock(&currentTemperatureMutex);
-    printf("after get TEMPERATURE\n");
+    int temperature;
+
+    pthread_mutex_lock(&currentTemperatureMutex);
+    {
+        temperature = currentTemperature;
+    }
+    pthread_mutex_unlock(&currentTemperatureMutex);
+
+    return temperature;
 }
 
 _Bool TemperatureMonitor_isTemperatureNormal(int temperature)
@@ -116,13 +118,11 @@ static void *startTemperatureThread(void *args)
 
         convertedVoltageVal = covertAnalogToVoltage(A2DReadingVal);
 
-        printf("set TEMPERATURE\n");
-        // pthread_mutex_lock(&currentTemperatureMutex);
-        // {
+        pthread_mutex_lock(&currentTemperatureMutex);
+        {
             currentTemperature = covertVoltageToTemperature(convertedVoltageVal);
-        // }
-        // pthread_mutex_unlock(&currentTemperatureMutex);
-        printf("after set TEMPERATURE\n");
+        }
+        pthread_mutex_unlock(&currentTemperatureMutex);
 
         printf("current room temperature is: %d\n", currentTemperature);
 

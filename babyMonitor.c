@@ -61,13 +61,17 @@ static void startBabyMonitor(void)
         4) other modules
     */
 
-    // if ( !Video_startStreaming() ) {
-    //     printf("[ERROR] failed to init video module\n");
-    // }
+    if ( !Video_startStreaming() ) {
+        printf("[ERROR] failed to init video module\n");
+
+        return;
+    }
 
 
     if ( !Microphone_startListening() ) {
         printf("[ERROR] failed to init microphone module\n");
+
+        return;
     }
 
     if ( !TCPSender_init() ) {

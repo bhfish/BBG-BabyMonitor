@@ -24,6 +24,9 @@ var decibelChartObj = undefined;
 var isMonitorRunning = false;
 var isAlarmRunning = false;
 
+var temperatureCTX = $("#temperatureChart")[0].getContext('2d')
+var decibelCTX = $("#decibelChart")[0].getContext('2d');
+
 // client side js begins here
 $(document).ready(function() {
     console.log("Document loaded");
@@ -34,10 +37,7 @@ $(document).ready(function() {
     nodeServerSocket.on('disconnect', function(){
         displayErrorMessage(SERVER_ERROR_MESSAGE);
         displayDefaultValues();
-
-        if (temperatureChartObj) {
-            temperatureChartObj.destroy();
-        }
+        destroyAllGraph();
     });
 
     // get the monitor BBG and alarm BBG running status for every 1s
@@ -59,15 +59,15 @@ $(document).ready(function() {
         getDecibel();
     }, 1000);
 
-    // get the current temperature data for every 10s
+    // get the current temperature data for every 15s
     setInterval(function(){
         getBabyRoomTemperatureDataset();
-    }, 10000);
+    }, 15000);
 
     // get the current sound data for every 10s
     setInterval(function(){
         getBabyRoomDecibelDataset();
-    }, 1000);
+    }, 10000);
 
     // callback to turn-off system error message
     setInterval(function(){
@@ -131,7 +131,11 @@ function waitForNodeServerResponse() {
     nodeServerSocket.on(GET_TEMPERATURE_DATASET_EVENT_NAME, function(datasetObj) {
         if (isMonitorRunning == true) {
             if (datasetObj) {
-                temperatureChartObj = renderGraph(datasetObj, $("#temperatureChart")[0].getContext('2d'), "Baby's Room Temperature", "time", "Temperature °C");
+                if (temperatureChartObj) {
+                    updateGraph(temperatureChartObj, datasetObj);
+                } else {
+                    temperatureChartObj = renderGraph(datasetObj, temperatureCTX, "Baby's Room Temperature", "time", "Temperature °C");
+                }
             }
         }
     });
@@ -139,7 +143,11 @@ function waitForNodeServerResponse() {
     nodeServerSocket.on(GET_DECIBEL_DATASET_EVENT_NAME, function(datasetObj) {
         if (isMonitorRunning == true) {
             if (datasetObj) {
-                decibelChartObj = renderGraph(datasetObj, $("#decibelChart")[0].getContext('2d'), "Baby's Decibel", "time", "Decibel dB");
+                if (decibelChartObj) {
+                    updateGraph(decibelChartObj, datasetObj);
+                } else {
+                    decibelChartObj = renderGraph(datasetObj, decibelCTX, "Baby's Decibel", "time", "Decibel dB");
+                }
             }
         }
     });
@@ -150,13 +158,7 @@ function waitForNodeServerResponse() {
         displayErrorMessage(SYSTEM_ERROR_MESSAGE);
 
         // destroy the graphs on the web if monitor BBG is not running
-        if (temperatureChartObj) {
-            temperatureChartObj.destroy();
-        }
-
-        if (decibelChartObj) {
-            decibelChartObj.destroy();
-        }
+        destroyAllGraph();
     });
 
     nodeServerSocket.on(ALARM_BBG_FAILURE_EVENT_NAME, function() {
@@ -171,7 +173,7 @@ function renderGraph(datasetObj, ctx, graphTitle, xAxisLabel, yAxisLabel){
     var chartConfig = {
         type: 'line',
         data: {
-            labels:datasetObj.timestamp,
+            labels: datasetObj.timestamp,
             datasets: [{
                 label: graphTitle,
                 data: datasetObj.dataset,
@@ -215,6 +217,19 @@ function renderGraph(datasetObj, ctx, graphTitle, xAxisLabel, yAxisLabel){
     return graphObj;
 }
 
+// new data to be added to the pre-existed graph and will be displayed dynamically afterwards
+function updateGraph(graphObj, datasetObj) {
+    for (var i = 0; i < datasetObj.dataset.length; i++) {
+        graphObj.data.datasets.forEach((dataset) => {
+            dataset.data.push(datasetObj.dataset[i]);
+        });
+
+        graphObj.data.labels.push(datasetObj.timestamp[i]);
+    }
+
+    graphObj.update();
+}
+
 function displayErrorMessage(message) {
     $('#error-text').text(message);
     $('#error-box').show();
@@ -249,9 +264,9 @@ function displayAlarmStatus(alarmStatus) {
 }
 
 function displayTemperature(temperature) {
-    $('#babyRoomTemperature').text(temperature + " °C");
+    $('#babyRoomTemperature').text(temperature);
 
-    if (temperature == "Unknown") {
+    if (temperature == "Unknown" || temperature.indexOf("Abnormal") >= 0 ) {
         $('#babyRoomTemperature').css({'color': 'red', 'font-weight': 'bold'});
     } else {
         $('#babyRoomTemperature').css({'color': 'blue', 'font-weight': 'bold'});
@@ -259,9 +274,9 @@ function displayTemperature(temperature) {
 }
 
 function displayDecibel(decibel) {
-    $('#decibelLevel').text(decibel + " dB");
+    $('#decibelLevel').text(decibel);
 
-    if (decibel == "Unknown") {
+    if (decibel == "Unknown" || decibel.indexOf("Abnormal") >= 0) {
         $('#decibelLevel').css({'color': 'red', 'font-weight': 'bold'});
     } else {
         $('#decibelLevel').css({'color': 'blue', 'font-weight': 'bold'});
@@ -273,4 +288,14 @@ function displayDefaultValues() {
     displayAlarmStatus("Inactive");
     displayTemperature("Unknown");
     displayDecibel("Unknown");
+}
+
+function destroyAllGraph() {
+    if (temperatureChartObj) {
+        temperatureChartObj.destroy();
+    }
+
+    if (decibelChartObj) {
+        decibelChartObj.destroy();
+    }
 }

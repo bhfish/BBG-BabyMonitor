@@ -42,6 +42,11 @@ static pthread_mutex_t currentDecibelMutex = PTHREAD_MUTEX_INITIALIZER;
 static double currentDecibel;
 
 _Bool Microphone_startListening() {
+    if (!connectToDevice() || !initializeDeviceSettings()) {
+        printf("Error: unable to initialize device");
+        return false;
+    }
+
     if (pthread_create(&listenerThread, NULL, &listenOverMicrophone, NULL) != 0) {
         printf("Error: failed to create new listener thread\n");
         return false;
@@ -85,7 +90,7 @@ int Microphone_getCurrentDecibel() {
 }
 
 _Bool Microphone_isDecibelNormal(int decibel) {
-    if (decibel > MAX_DECIBEL_THRESH_HOLD || decibel < MIN_DECIBEL_THRESH_HOLD) {
+    if (decibel < MAX_DECIBEL_THRESH_HOLD || decibel > MIN_DECIBEL_THRESH_HOLD) {
         return false;
     }
 
@@ -143,11 +148,6 @@ static _Bool shouldStopListening() {
 }
 
 static void* listenOverMicrophone(void *args) {
-    if (!connectToDevice() || !initializeDeviceSettings()) {
-        printf("Error: unable to initialize device");
-        return NULL;
-    }
-
     snd_pcm_uframes_t bufferSize = 2 * PERIOD_SIZE * 2;
     short buffer[bufferSize];
     while (!shouldStopListening()) {
@@ -155,7 +155,8 @@ static void* listenOverMicrophone(void *args) {
         frames = snd_pcm_readi(pcmDevice, &buffer, bufferSize);
         if (frames < 0) {
             printf("Error: reading frames (%s)\n", snd_strerror(frames));
-            return NULL;
+
+            pthread_exit(PTHREAD_CANCELED);
         }
 
         WaveStreamer_setBuffer(buffer, bufferSize);
@@ -163,7 +164,7 @@ static void* listenOverMicrophone(void *args) {
         alertIfDecibelOutsideThreshHold();
     }
 
-    return NULL;
+    pthread_exit(PTHREAD_CANCELED);
 }
 
 static double getAverageAmplitude(short *buffer, int bufferSize) {
