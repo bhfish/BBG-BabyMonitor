@@ -8,5 +8,6 @@
 _Bool Microphone_startListening();
 void Microphone_stopListening();
 int Microphone_getCurrentDecibel();
+_Bool Microphone_isDecibelNormal(int decibel);
 
 #endif

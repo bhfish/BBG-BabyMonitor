@@ -8,6 +8,7 @@
 #include "temperatureMonitor.h"
 #include "monitorData.h"
 #include "dataRecorder.h"
+#include "Microphone.h"
 
 #ifdef DEMO_MODE
     #define RECORD_DATA_TIME_INTERVAL_IN_S      10
@@ -20,7 +21,7 @@ static pthread_mutex_t recordTemperatureMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t recordSoundMutex = PTHREAD_MUTEX_INITIALIZER;
 static _Bool stopRecording = false;
 
-static void saveAvgDataToFS(DATA_CATEGORY CATEGORY, int numData);
+static void saveDataToFS(DATA_CATEGORY CATEGORY, int numData);
 static void *startRecorderThread(void *args);
 
 _Bool DataRecorder_startRecording(void)
@@ -74,15 +75,15 @@ static void *startRecorderThread(void *args)
     while (!stopRecording) {
         nanosleep(&recordTime, &remainTime);
 
-        // TODO: get sound decibel data
-        saveAvgDataToFS(TEMPERATURE, TemperatureMonitor_getCurrentTemperature());
+        saveDataToFS(TEMPERATURE, TemperatureMonitor_getCurrentTemperature());
+        saveDataToFS(SOUND, Microphone_getCurrentDecibel());
     }
 
     pthread_exit(PTHREAD_CANCELED);
 }
 
 // save the specified data as csv format to the data file
-static void saveAvgDataToFS(DATA_CATEGORY CATEGORY, int dataVal)
+static void saveDataToFS(DATA_CATEGORY CATEGORY, int dataVal)
 {
     char recordFilePath[DATA_FILE_NAME_LEN] = {0};
     char fileContents[DATA_FILE_LINE_LEN] = {0};

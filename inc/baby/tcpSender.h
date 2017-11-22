@@ -7,7 +7,7 @@
     "<data type>:<data value>;"
     e.g. "temperature:23;" or "sound:77;"
     or alarm
-    e.g. "alarm:temperature:23"
+    e.g. "alarm:;"
 
     NOTE:
     this module will not be responsible for checking the validity and integrity of such data
@@ -24,7 +24,7 @@
 _Bool TCPSender_init(void);
 
 // send specified data to parent's BBG via TCP socket
-_Bool TCPSender_sendDataToParentBBG(int dataToSend, DATA_CATEGORY CATEGORY);
+_Bool TCPSender_sendDataToParentBBG(DATA_CATEGORY CATEGORY, int dataToSend);
 
 // send alarm request to parent's BBG via TCP socket
 _Bool TCPSender_sendAlarmRequestToParentBBG(void);

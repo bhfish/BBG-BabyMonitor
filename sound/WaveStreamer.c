@@ -103,17 +103,19 @@ static void* waveStreamer(void* args) {
 
 	if (!initializeSocket()) {
 		printf("Error: unable to initialize UDP socket\n");
-		return NULL;
+
+        pthread_exit(PTHREAD_CANCELED);
 	}
 
 	while (!shouldStopStreaming()) {
 		if (!sendBuffer()) {
 			printf("Error: unable to send buffer\n");
-			return NULL;
+
+            pthread_exit(PTHREAD_CANCELED);
 		}
 	}
 
-	return NULL;
+	pthread_exit(PTHREAD_CANCELED);
 }
 
 static _Bool sendBuffer() {

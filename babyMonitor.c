@@ -55,19 +55,23 @@ static void startBabyMonitor(void)
 {
     /*
         baby's BBG startup sequence should follow the order of
-        
+        1) video/sound
         2) sender
-        3) UDP server (user web interface) TODO
+        3) UDP server (user web interface)
         4) other modules
     */
-	
+
     if ( !Video_startStreaming() ) {
         printf("[ERROR] failed to init video module\n");
+
+        return;
     }
-	
+
 
     if ( !Microphone_startListening() ) {
         printf("[ERROR] failed to init microphone module\n");
+
+        return;
     }
 
     if ( !TCPSender_init() ) {

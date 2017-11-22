@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <errno.h> 
+#include <errno.h>
 
 //bool progRun = true;
 static char* command = "./video/captureVideo -F -o -c0|ffmpeg -vcodec mjpeg -i pipe:0 -f mjpeg udp://192.168.7.1:1234";
@@ -25,7 +25,7 @@ void Video_stopStreaming()
 	void *videoThreadExitStatus;
 	//stopStreaming = true;
 	kill(child_pid, SIGTERM);
-	
+
 	if(pthread_join( video_thread, &videoThreadExitStatus)!=0)
 	{
 		printf("[ERROR] failed to join with terminated video thread failed reason: %s\n", strerror(errno));
@@ -42,7 +42,7 @@ void Video_stopStreaming()
 		    printf("[ERROR] failed to send a cancel request to video thread failed reason: %s\n", strerror(errno));
 		}
     	}
-	
+
 }
 
 /*
@@ -55,14 +55,26 @@ static void* startStreamVideo()
 		printf("[ERROR] failed to fork child process for video streaming: %s\n", strerror(errno));
 	}
 
+<<<<<<< HEAD
 	if(child_pid==0){
 		execl("/bin/sh", "sh", "-c", command, (char *) 0);
 	}else if(child_pid>0){
+=======
+	if(child_pid>0)
+	{
+		if (execl("/bin/sh", "sh", "-c", command, (char *) 0) == -1) {
+			printf("[ERROR] failed to run videoCapture\n");
+
+			exit(EXIT_FAILURE);
+		}
+	}else if(child_pid==0)
+	{
+>>>>>>> d4dd4b26121359ee2f4865c861ecac7a2ae2cb7c
 		wait(NULL);
 	}
 
 	pthread_exit(PTHREAD_CANCELED);
-	
+
 }
 
 /*
@@ -71,14 +83,14 @@ static void* startStreamVideo()
 _Bool Video_startStreaming(void)
 {
 	int rt;
-	
+
 	//Start new thread
 	rt = pthread_create(&video_thread, NULL,  (void *)&startStreamVideo, NULL);
     	if( rt )
 	{
 		printf("Thread creation failed: %d\n", rt);
-		return false;	
+		return false;
 	}
-	
+
 	return true;
 }

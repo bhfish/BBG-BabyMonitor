@@ -25,6 +25,7 @@
 #define MONITOR_TIME_INTERVAL_IN_S              1
 
 static pthread_t temperatureThread;
+static pthread_mutex_t currentTemperatureMutex = PTHREAD_MUTEX_INITIALIZER;
 static _Bool stopMonitoring = false;
 static int currentTemperature;
 
@@ -51,7 +52,24 @@ _Bool TemperatureMonitor_startMonitoring(void)
 
 int TemperatureMonitor_getCurrentTemperature(void)
 {
-    return currentTemperature;
+    int temperature;
+
+    pthread_mutex_lock(&currentTemperatureMutex);
+    {
+        temperature = currentTemperature;
+    }
+    pthread_mutex_unlock(&currentTemperatureMutex);
+
+    return temperature;
+}
+
+_Bool TemperatureMonitor_isTemperatureNormal(int temperature)
+{
+    if (temperature < MIN_TEMPERATURE_IN_CELSIUS_ALLOW || temperature > MAX_TEMPERATURE_IN_CELSIUS_ALLOW) {
+        return false;
+    }
+
+    return true;
 }
 
 void TemperatureMonitor_stopMonitoring(void)
@@ -99,10 +117,16 @@ static void *startTemperatureThread(void *args)
         }
 
         convertedVoltageVal = covertAnalogToVoltage(A2DReadingVal);
-        currentTemperature = covertVoltageToTemperature(convertedVoltageVal);
+
+        pthread_mutex_lock(&currentTemperatureMutex);
+        {
+            currentTemperature = covertVoltageToTemperature(convertedVoltageVal);
+        }
+        pthread_mutex_unlock(&currentTemperatureMutex);
+
         printf("current room temperature is: %d\n", currentTemperature);
 
-        if (currentTemperature < MIN_TEMPERATURE_IN_CELSIUS_ALLOW || currentTemperature > MAX_TEMPERATURE_IN_CELSIUS_ALLOW) {
+        if ( !TemperatureMonitor_isTemperatureNormal(currentTemperature) ) {
 
             // CRITICAL as we don't tolerate any failures returned by the send function
             printf("[WARN] detect abnormal temperature!\n");
@@ -110,10 +134,8 @@ static void *startTemperatureThread(void *args)
             // if this failed, there is nothing we can do much from baby's BBG side
             TCPSender_sendAlarmRequestToParentBBG();
         }
-        else {
-            // it's ok to tolerate any failures returned by the send function since it is not critical
-            TCPSender_sendDataToParentBBG(currentTemperature, TEMPERATURE);
-        }
+
+        TCPSender_sendDataToParentBBG(TEMPERATURE, currentTemperature);
 
         nanosleep(&monitorTime, &remainTime);
     }
