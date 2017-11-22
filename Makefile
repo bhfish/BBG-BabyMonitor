@@ -1,0 +1,50 @@
+CROSS_COMPILE =arm-linux-gnueabihf-gcc
+BABY_MONITOR_INC_DIR = inc
+BABY_MONITOR_LIB_INC_DIR = lib
+BABY_MONITOR_VIDEO_DIR = video
+BABY_INC_PATH = $(BABY_MONITOR_INC_DIR)/baby
+PARENT_INC_PATH = $(BABY_MONITOR_INC_DIR)/parent
+BBG_HW_LIB_PATH = $(BABY_MONITOR_LIB_INC_DIR)/BBGHardware
+BABY_MONITOR_SYS_LIB_PATH = $(BABY_MONITOR_LIB_INC_DIR)/sys
+BABY_MONITOR_BABY_OBJ_FILE = babyMonitor
+BABY_MONITOR_PARENT_OBJ_FILE = parentMonitor
+BABY_MONITOR_VIDEO_CAPTURE_OBJ_FILE = captureVideo
+BABY_MONITOR_VIDEO_CAPTURE_SRC_FILE = captureVideo.c
+BABY_MONITOR_SRC_FILE = $(wildcard *.c)
+BABY_MONITOR_MICROPHONE_SRC_FILE = $(wildcard sound/*.c)
+BABY_MONITOR_WEB_DIR = web
+BBG_HW_LIB_SRC_FILE = $(wildcard $(BBG_HW_LIB_PATH)/*.c)
+NFS_PATH = $(HOME)/cmpt433/public/myApps
+ASOUND_LIB_PATH = $(HOME)/cmpt433/public/asound_lib_BBB
+CFLAGS = -Wall -g -std=c99 -D _POSIX_C_SOURCE=200809L -Werror -I $(BABY_INC_PATH) -I $(BABY_MONITOR_SYS_LIB_PATH) -I $(BBG_HW_LIB_PATH)
+LFLAGS = -L$(ASOUND_LIB_PATH) -lasound -lpthread -lm
+LFLAGS_VIDEO = -lv4l2
+
+# optional build flags
+# DEBUG_MODE = -D DEBUG_MODE
+DEMO_MODE = -D DEMO_MODE
+
+all: webServer node_install
+
+captureVideo:
+	mkdir -p $(NFS_PATH)/$(BABY_MONITOR_VIDEO_DIR)
+	chmod 777 $(NFS_PATH)/$(BABY_MONITOR_VIDEO_DIR)
+	cp $(BABY_MONITOR_VIDEO_DIR)/* $(NFS_PATH)/$(BABY_MONITOR_VIDEO_DIR)/
+
+webServer:
+	mkdir -p $(NFS_PATH)/$(BABY_MONITOR_WEB_DIR)/
+	chmod 777 $(NFS_PATH)/$(BABY_MONITOR_WEB_DIR)/
+	cp -R $(BABY_MONITOR_WEB_DIR)/* $(NFS_PATH)/$(BABY_MONITOR_WEB_DIR)/
+
+node_install:
+	@echo ''
+	@echo ''
+	@echo 'INSTALLING REQUIRED NODE PACKAGES'
+	@echo '(This may take some time)'
+	@echo ''
+	cd $(NFS_PATH)/$(BABY_MONITOR_WEB_DIR)/ && npm install
+
+clean:
+	rm -r $(NFS_PATH)/$(BABY_MONITOR_VIDEO_DIR)
+	rm -rf $(NFS_PATH)/$(BABY_MONITOR_WEB_DIR)
+
