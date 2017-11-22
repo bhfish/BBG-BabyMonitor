@@ -2,7 +2,7 @@
    The port number is passed as an argument */
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -10,6 +10,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <arpa/inet.h>
 #include "parent_process.h"
 #include "tcp_server.h"
 
@@ -26,7 +27,6 @@
 static int socketfd;
 static int newsocketfd = 0;
 static int client_lenth;
-static bool finished = false;
 static struct sockaddr_in tcp_server;
 static struct sockaddr_in tcp_client;
 pthread_t tcpServerThreadId;
@@ -36,18 +36,20 @@ static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer);
 static void tcpServerTask(void);
 static int tcpServerBindPort(void);
 //static void test(void);
-//static void tcpServerCleanup(void); 
+//static void tcpServerCleanup(void);
 
 static void tcpServerTask(void)
 {
 	struct timeval timeSpan;
-	//timeSpan.tv_sec =0;
-	//timeSpan.tv_usec = 100;
+	timeSpan.tv_sec = 0;
+	timeSpan.tv_usec = 100;
 
 	char rx_buffer[RX_BUFLEN];
     char tx_buffer[TX_BUFLEN];
-	fd_set socketFileDescirptor;
+    fd_set activeFD, readFD;
 
+    // WILSON, a bug here. have to explicitly set stopping to false; otherwise, sometimes the following codes won't run
+    stopping = false;
 	//char tx_buffer[TX_BUFLEN];
 	//int res;
 	int numberOfConnection;
@@ -55,66 +57,74 @@ static void tcpServerTask(void)
 	//int pid;
 
 	client_lenth = sizeof(tcp_client);
-	
-	
+
+    /* Initialize the set of active sockets. */
+    FD_ZERO (&activeFD);
+    FD_SET (socketfd, &activeFD);
+
+    // TCP server referenced from: http://www.gnu.org/software/libc/manual/html_node/Server-Example.html
 	while(!stopping)
 	{
-		finished = false;
-		FD_ZERO(&socketFileDescirptor);
-		FD_SET(socketfd, &socketFileDescirptor);
-		timeSpan.tv_sec =0;
-		timeSpan.tv_usec = 100;
-		//newsocketfd = accept(socketfd, (struct sockaddr *) &tcp_client, &client_lenth);
-		numberOfConnection = select(socketfd + 1, &socketFileDescirptor, NULL, NULL, &timeSpan);
-		//printf("number of connection%d\n",numberOfConnection);
-		
+        char clientIPAddrName[100] = {0};
+        readFD = activeFD;
+		numberOfConnection = select(FD_SETSIZE, &readFD, NULL, NULL, &timeSpan);
+
 		if(numberOfConnection>0)
 		{
-
 			printf("number of connection%d\n",numberOfConnection);
-			newsocketfd = accept(socketfd, (struct sockaddr *) &tcp_client, (socklen_t *)&client_lenth);
-			if(newsocketfd < 0){
-				printf("ERROR on accept");
-			}
-			 while(!finished){
-			 	//printf("I'm here s\n");
-				memset(rx_buffer, 0, sizeof(rx_buffer));
-                memset(tx_buffer, '\0', sizeof(tx_buffer));
 
-                num_bytes = read(newsocketfd, rx_buffer, RX_BUFLEN);
-                //printf("numb: %d\n", num_bytes);
+            /* Service all the sockets with input pending. */
+            for (int i = 0; i < FD_SETSIZE; i++) {
+                if (FD_ISSET (i, &readFD) ){
+                    if (i == socketfd) {
+                        /* Connection request on original socket. */
+                        newsocketfd = accept(socketfd, (struct sockaddr *) &tcp_client, (socklen_t *)&client_lenth);
+                        if(newsocketfd < 0){
+                            printf("ERROR on accept");
+                            break;
+                        }
 
-				if(num_bytes > 0)
-				{
-                    tcpServerCmdParse(rx_buffer, tx_buffer); 
-					//printf("Here is the message: %s\n",rx_buffer);
-				}
-				else{
-					finished = true;
-				}
+                        FD_SET (newsocketfd, &activeFD);
+                    }
+                    else {
+                        /* Data arriving on an already-connected socket. */
+                        //printf("I'm here s\n");
+                        memset(rx_buffer, 0, sizeof(rx_buffer));
+                        memset(tx_buffer, '\0', sizeof(tx_buffer));
 
-                if (strlen(tx_buffer) != 0){
-                    write(newsocketfd, tx_buffer, strlen(tx_buffer));
-                    printf("...[TCP]Reply: %s, strlen %d \n",tx_buffer, strlen(tx_buffer));
+                        num_bytes = read(i, rx_buffer, RX_BUFLEN);
+                        //printf("numb: %d\n", num_bytes);
+
+                        if(num_bytes > 0)
+                        {
+                            tcpServerCmdParse(rx_buffer, tx_buffer);
+                            //printf("Here is the message: %s\n",rx_buffer);
+                            if (strlen(tx_buffer) != 0){
+                                inet_ntop(AF_INET, &tcp_client.sin_addr.s_addr, clientIPAddrName, INET_ADDRSTRLEN);
+                                int numBytesWrite = write(newsocketfd, tx_buffer, strlen(tx_buffer));
+                                printf("...[TCP]Reply: %s, size %d to %s\n",tx_buffer, numBytesWrite, clientIPAddrName);
+                            }
+                        }
+                    }
                 }
-			}
-		
+            }
+		}
+
 		//if(num_bytes < 0) printf("ERROR reading from socket");
-		
+
 		//num_bytes = write(newsocketfd, "I got your message\n", 19);
-		
+
         //if(num_bytes < 0) printf("ERROR writing from socket");
         //close(newsocketfd);
         	//nanosleep(&delay100ms, NULL);
 
-		}
+	}
 	//printf("TCP SERVER CLOSED\n");
-	}	
-		
+
 	 /*while (!stopping) {
          newsocketfd = accept(socketfd, (struct sockaddr *) &tcp_client, &client_lenth);
-	
-         if (newsocketfd < 0) 
+
+         if (newsocketfd < 0)
             printf("ERROR on accept");
          pid = fork();
          if (pid < 0)
@@ -128,18 +138,15 @@ static void tcpServerTask(void)
 			printf("Here is the message: %s\n",rx_buffer);
 
 			if(num_bytes < 0) printf("ERROR reading from socket");
-		
+
 			num_bytes = write(newsocketfd, "I got your message\n", 19);
-		
+
         	if(num_bytes < 0) printf("ERROR writing from socket");
             /// dostuff(newsockfd);
              exit(0);
          }
          else close(newsocketfd);
      } */
-	
- 
-     
 }
 /*static void test(void)
 {
@@ -149,7 +156,7 @@ static void tcpServerTask(void)
 
 	client_lenth = sizeof(tcp_client);
 	newsocketfd = accept(socketfd, (struct sockaddr *) &tcp_client, &client_lenth);
-	
+
 	if(newsocketfd < 0)
 		printf("ERROR on accept");
 
@@ -159,9 +166,9 @@ static void tcpServerTask(void)
 	printf("Here is the message: %s\n",rx_buffer);
 
 	if(num_bytes < 0) printf("ERROR reading from socket");
-		
+
 	num_bytes = write(newsocketfd, "I got your message", 18);
-		
+
     if(num_bytes < 0) printf("ERROR writing from socket");
 
 }*/
@@ -171,7 +178,7 @@ static int tcpServerBindPort(void)
 	int res = 0;
 	socketfd = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (socketfd < 0) 
+	if (socketfd < 0)
         	printf("ERROR opening socket");
 
     //bzero((char *) &tcp_server, sizeof(tcp_server));
@@ -180,15 +187,15 @@ static int tcpServerBindPort(void)
 	tcp_server.sin_family = AF_INET;
 	tcp_server.sin_addr.s_addr = INADDR_ANY;
     tcp_server.sin_port = htons(PORT);
-	
 
-	if (bind(socketfd, (struct sockaddr *) &tcp_server,sizeof(tcp_server)) < 0) 
+
+	if (bind(socketfd, (struct sockaddr *) &tcp_server,sizeof(tcp_server)) < 0)
             printf("ERROR on binding");
-	
+
 	listen(socketfd, MAX_NUM_CONNECTION);
-	
+
 	return res;
-	
+
 }
 
 static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer)
@@ -223,14 +230,15 @@ static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer)
             printf("...[TCP]Alarm trigger received.\n");
         }
 	}
-	else if(strcmp("getParentBBGStatus", buf_tokens[0]) == 0)
+	else if(strcmp("getAlarmBBGStatus", buf_tokens[0]) == 0)
 	{
         if (getSysInitStatus()){
-            strcpy(tx_buffer, "Active");
+            sprintf(tx_buffer, "%s:%s", buf_tokens[0], "Active");
         } else {
-            strcpy(tx_buffer, "Inactive");
+            sprintf(tx_buffer, "%s:%s", buf_tokens[0], "Inactive");
         }
-        printf("...[TCP]Reply parent BBG status: %s.\n", tx_buffer);
+
+        printf("wilson: tx_buffer: %s\n", tx_buffer);
 	}
 	else if(strcmp("armed", buf_tokens[0]) == 0)
 	{
@@ -266,7 +274,7 @@ int tcpServerInit(void)
     if( res )
 	{
 		printf("Thread creation failed: %d\n", res);
-		return -1;	
+		return -1;
 	}
 
 	return res;
