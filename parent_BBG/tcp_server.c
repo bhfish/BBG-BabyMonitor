@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>      // errno
 #include <unistd.h>
 #include <time.h>
 #include <arpa/inet.h>
@@ -71,7 +72,7 @@ static void tcpServerTask(void)
 
 		if(numberOfConnection>0)
 		{
-			printf("number of connection%d\n",numberOfConnection);
+			// printf("number of connection%d\n",numberOfConnection);
 
             /* Service all the sockets with input pending. */
             for (int i = 0; i < FD_SETSIZE; i++) {
@@ -190,7 +191,7 @@ static int tcpServerBindPort(void)
 
 
 	if (bind(socketfd, (struct sockaddr *) &tcp_server,sizeof(tcp_server)) < 0)
-            printf("ERROR on binding");
+            printf("ERROR on binding reason: %s", strerror(errno));
 
 	listen(socketfd, MAX_NUM_CONNECTION);
 
@@ -200,57 +201,63 @@ static int tcpServerBindPort(void)
 
 static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer)
 {
-	int res = 0;
-    char* buf_tokens[2];
+    int res = 0;
+    const char DELIM[2] = ":;";
+    char *token;
 
-    if ((buf_tokens[0] = strtok(rx_buffer,": \n\t\0")) != NULL){
-   		buf_tokens[1] = strtok(NULL, " \n\t\0");
-    }
-    else{
+    printf("rx_buffer: %s\n", rx_buffer);
+
+    if (rx_buffer[strlen(rx_buffer) - 1] != ';') {
+        printf("ERROR: unexpected message format\n");
+
         return -1;
     }
 
-	if(strcmp("temperature", buf_tokens[0]) == 0)
-	{
-		babyRoomTemp = atoi(buf_tokens[1]);
-        printf("Temperature is %d\n", babyRoomTemp);
-	}
-	else if(strcmp("sound", buf_tokens[0]) == 0)
-	{
-		babySoundLevel = atoi(buf_tokens[1]);
-        setBbySoundLevel(babySoundLevel);
-        printf("SOUND is %d\n", babySoundLevel);
-	}
-	else if(strcmp("alarm", buf_tokens[0]) == 0)
-	{
-        if (getAlarmSleepStatus()) {
-            printf("...[TCP]Alarm in sleep mode, will not trigger alarm.\n");
-        } else {
-            alarmTriggered = true;
-            printf("...[TCP]Alarm trigger received.\n");
+    token = strtok(rx_buffer, DELIM);
+
+    while (token != NULL) {
+
+        if (strcmp(token, "alarm") == 0) {
+        	if (getAlarmSleepStatus()) {
+            	printf("...[TCP]Alarm in sleep mode, will not trigger alarm.\n");
+             } else {
+             	alarmTriggered = true;
+             	printf("...[TCP]Alarm trigger received.\n");
+             }
+
         }
-	}
-	else if(strcmp("getAlarmBBGStatus", buf_tokens[0]) == 0)
-	{
-        if (getSysInitStatus()){
-            sprintf(tx_buffer, "%s:%s", buf_tokens[0], "Active");
-        } else {
-            sprintf(tx_buffer, "%s:%s", buf_tokens[0], "Inactive");
+        else if (strcmp(token, "getAlarmBBGStatus") == 0) {
+			if (getSysInitStatus()){
+            	sprintf(tx_buffer, "%s:%s", token, "Active");
+            } else {
+            	sprintf(tx_buffer, "%s:%s", token, "Inactive");
+			}
+
+        }
+        else if(strcmp("close", token) == 0)
+        {
+            tcpServerCleanup();
+            printf("Now close the program\n");
+        }
+        else {
+            if (strcmp("temperature", token) == 0) {
+                token = strtok(NULL, DELIM);
+                int babyRoomTemp = atoi(token);
+
+                printf("Temperature is %d\n", babyRoomTemp);
+            }
+            else if (strcmp("sound", token) == 0) {
+                token = strtok(NULL, DELIM);
+                int babySoundLevel = atoi(token);
+
+                setBbySoundLevel(babySoundLevel);
+                printf("SOUND is %d\n", babySoundLevel);
+            }
         }
 
-        printf("wilson: tx_buffer: %s\n", tx_buffer);
-	}
-	else if(strcmp("armed", buf_tokens[0]) == 0)
-	{
-        alarmStateArm = true;
-        printf("...[TCP]Alarm armed.\n");
-	}
-	else if(strcmp("close", buf_tokens[0]) == 0)
-	{
-		stopping = true;
-		tcpServerCleanup();
-		printf("Now close the program\n");
-	}
+        // move to next token
+        token = strtok(NULL, DELIM);
+    }
 
 	return res;
 }
