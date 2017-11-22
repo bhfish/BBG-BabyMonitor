@@ -1,10 +1,10 @@
 ﻿/*
- *  V4L2 video capture for the Logitech C270 camera
- *  Modified by Baihui Zhang  
- *  Modifications: modified the -F mode for MJPEG capture and -f mode for YUYV capture
+ *  V4L2 video capture
+ * 
+ *  Modified by Baihui Zhang for the Logitech C270 camera
  *
- *  This program is provided with the V4L2 API
- *  see http://linuxtv.org/docs.php for more information
+ *      This program is provided with the V4L2 API
+ * see http://linuxtv.org/docs.php for more information
  */
 
 #include <stdio.h>
@@ -177,15 +177,15 @@ static void mainloop(void)
         while ((count-- > 0) || loopIsInfinite) {
                 for (;;) {
                         fd_set fds;
-                        struct timeval tv;
+                        //struct timeval tv;  //comment out because it is defined but no used
                         int r;
 
                         FD_ZERO(&fds);
                         FD_SET(fd, &fds);
 
                         /* Timeout. */
-                        tv.tv_sec = 2;
-                        tv.tv_usec = 0;
+                        //tv.tv_sec = 2;//comment out because it is defined but no used
+                        //tv.tv_usec = 0;//comment out because it is defined but no used
 
                         r = select(fd + 1, &fds, NULL, NULL, NULL);
 
@@ -487,8 +487,8 @@ static void init_device(void)
 	fprintf(stderr, "Force Format %d\n", force_format);
         if (force_format) {
 		if (force_format==2){
-             		fmt.fmt.pix.width       = 1280;     
-           		fmt.fmt.pix.height      = 720;  
+             		fmt.fmt.pix.width       = 640;     
+           		fmt.fmt.pix.height      = 360;  
   			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
                 	fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 		}

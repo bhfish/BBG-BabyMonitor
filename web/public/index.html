@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <title>Baby Monitoring</title>
+    <meta charset="UTF-8">
+    <link rel='stylesheet' href='/css/indexStyle.css'/>
+</head>
+
+<body>
+<form>
+    <h1 align="center">Third Eye Baby Monitoring</h1>
+
+    <div id='content'>
+        <div id='status-box'>
+            <h3>Monitor Status</h3>
+                <div id='monitorStatus'></div>
+            <h3>Alarm Status</h3>
+                <div id='alarmStatus'></div>
+            <h3>Current Temperature</h3>
+                <div id='babyRoomTemperature'></div>
+            <h3>Current Decibel</h3>
+                <div id='decibelLevel'></div>
+        </div>
+
+        <div id='left-box'>
+            <div id='modediv'>
+                <!-- TODO: video streaming section -->
+<!-- 		<embed type="application/x-vlc-plugin" pluginspage="http://www.videolan.org" version="VideoLAN.VLCPlugin.2" width="1280" height="720" id="vlc"</embed>
+<script>
+var vlc = document.getElementById("vlc");
+vlc.playlist.add("udp://@:1234", "baby-monitor");
+vlc.playlist.play();
+vlc.video.deinterlace.enable("blend");
+</script> -->
+            </div>
+
+        </div>
+        <div id='error-box'>
+            <h2>Internal Error</h2>
+            <div><code id='error-text'></code></div>
+        </div>
+
+        <div id='graphSection'>
+            <canvas id="temperatureChart"></canvas>
+            <canvas id="decibelChart"></canvas>
+        </div>
+    </div>
+</form>
+
+    <script src='/socket.io/socket.io.js' type='text/javascript'></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+    <script src='http://code.jquery.com/jquery-1.11.1.min.js' type='text/javascript'></script>
+    <script src='js/indexUI.js' type='text/javascript'></script>
+</body>
+</html>
