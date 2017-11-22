@@ -13,6 +13,7 @@ static char* command = "./video/captureVideo -F -o -c0|ffmpeg -vcodec mjpeg -i p
 static pthread_t video_thread;
 //static _Bool stopStreaming = false;
 static pid_t child_pid;
+
 void Video_stopStreaming();
 _Bool Video_startStreaming(void);
 
@@ -50,16 +51,13 @@ void Video_stopStreaming()
 static void* startStreamVideo()
 {
 	//system(command);
-	if( (child_pid = fork()) == -1)
-	{
+	if( (child_pid = fork()) == -1){
 		printf("[ERROR] failed to fork child process for video streaming: %s\n", strerror(errno));
 	}
 
-	if(child_pid>0)
-	{
+	if(child_pid==0){
 		execl("/bin/sh", "sh", "-c", command, (char *) 0);
-	}else if(child_pid==0)
-	{
+	}else if(child_pid>0){
 		wait(NULL);
 	}
 

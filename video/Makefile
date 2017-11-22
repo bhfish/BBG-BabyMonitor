@@ -1,5 +1,5 @@
 CFLAGS= -lv4l2
-CC=gcc $(CFLAGS)
+CC=gcc
 
 all: captureVideo
 
