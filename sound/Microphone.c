@@ -90,7 +90,7 @@ int Microphone_getCurrentDecibel() {
 }
 
 _Bool Microphone_isDecibelNormal(int decibel) {
-    if (decibel < MAX_DECIBEL_THRESH_HOLD || decibel > MIN_DECIBEL_THRESH_HOLD) {
+    if (decibel >= MAX_DECIBEL_THRESH_HOLD || decibel <= MIN_DECIBEL_THRESH_HOLD) {
         return false;
     }
 

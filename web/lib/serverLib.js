@@ -1,18 +1,20 @@
 "use strict"
 /*
-    nodejs server and C server program which runs in monitor BBG should agree the following message protocols
+    nodejs server and C server program which runs in monitor BBG should agree the following message protocols (UDP)
 
     GET request from nodejs server to C server
-    e.g. getTemperature\n
-
-    SET request from nodejs server to C server
-    e.g. setTemperature:<value>\n
+    e.g. getTemperature
 
     C server responds to GET request from nodejs server
-    e.g. getTemperature:<value>\n
+    e.g. getTemperature:<value>
 
-    C server responds to SET request from nodejs server
-    e.g. setTemperature:ok\n
+    nodejs server and C server program which runs in alarm BBG should agree the following message protocols (TCP)
+
+    GET request from nodejs server to C server
+    e.g. getAlarmBBGStatus:;
+
+    C server responds to GET from nodejs server
+    e.g. getAlarmBBGStatus:<value>
 
     data file format:
     <timestamp>,<data value>\n
@@ -46,36 +48,27 @@ const MONITOR_BBG_SEND_REQUEST_TIME_OUT = 5000;
 const ALARM_BBG_SEND_REQUEST_TIME_OUT = 5000;
 
 var eventTimeoutArr = {};
+var webSocket;
 var monitorBBGSocket = dgram.createSocket('udp4');
 
 // TCP socket to alarm BBG
-var alarmBBGSocket = new net.Socket();
+var alarmBBGSocket;
 var io;
 var prevTemperatureDataFileContent = undefined;
 var prevSoundDataFileContent = undefined;
+var TCPReconnectionTimeout = undefined;
 
 // wait for the C server program which runs in monitor BBG to send responses to me
 exports.listen = function(server) {
     io = socketio.listen(server);
-    io.set('log level 1');
+    io.set('log level', 1);
 
     // fired upon a connection from client
     io.sockets.on('connection', function(clientWebSocket) {
-        // establish TCP connection to alarm BBG
-        alarmBBGSocket.connect(ALARM_BBG_LISTEN_PORT, ALARM_BBG_LISTEN_ADDR);
-
-        // fired upon a connection failure to the alarm BBG
-        alarmBBGSocket.on('error', function(err) {
-            // render error to client and try to re-establish connection later
-            sendMessageToClient(clientWebSocket, ALARM_BBG_FAILURE_EVENT_NAME, null);
-            setTimeout(function(){
-                alarmBBGSocket.connect(ALARM_BBG_LISTEN_PORT, ALARM_BBG_LISTEN_ADDR);
-            }, ALARM_BBG_SEND_REQUEST_TIME_OUT);
-        });
-
+        webSocket = clientWebSocket;
+        openSocket();
         waitForClientUIRequest(clientWebSocket);
         redirectMonitorBBGResponseToClient(clientWebSocket);
-        redirectAlarmBBGResponseToClient(clientWebSocket);
     });
 };
 
@@ -85,7 +78,7 @@ function waitForClientUIRequest(clientWebSocket) {
             sendMessageToClient(clientWebSocket, MONITOR_BBG_FAILURE_EVENT_NAME, null);
         }, MONITOR_BBG_SEND_REQUEST_TIME_OUT);
 
-        sendRequestToMonitorBBG(GET_MONITOR_BBG_STATUS_EVENT_NAME + "\n");
+        sendRequestToMonitorBBG(GET_MONITOR_BBG_STATUS_EVENT_NAME);
     });
 
     clientWebSocket.on(GET_ALARM_BBG_STATUS_EVENT_NAME, function() {
@@ -93,16 +86,15 @@ function waitForClientUIRequest(clientWebSocket) {
             sendMessageToClient(clientWebSocket, ALARM_BBG_FAILURE_EVENT_NAME, null);
         }, ALARM_BBG_SEND_REQUEST_TIME_OUT);
 
-        sendRequestToAlarmBBG(GET_ALARM_BBG_STATUS_EVENT_NAME);
+        sendRequestToAlarmBBG(GET_ALARM_BBG_STATUS_EVENT_NAME + ":;");
     });
-
 
     clientWebSocket.on(GET_TEMPERATURE_EVENT_NAME, function() {
         eventTimeoutArr[GET_TEMPERATURE_EVENT_NAME] = setTimeout(function(){
             sendMessageToClient(clientWebSocket, MONITOR_BBG_FAILURE_EVENT_NAME, null);
         }, MONITOR_BBG_SEND_REQUEST_TIME_OUT);
 
-        sendRequestToMonitorBBG(GET_TEMPERATURE_EVENT_NAME + "\n");
+        sendRequestToMonitorBBG(GET_TEMPERATURE_EVENT_NAME);
     });
 
     clientWebSocket.on(GET_DECIBEL_EVENT_NAME, function() {
@@ -110,7 +102,7 @@ function waitForClientUIRequest(clientWebSocket) {
             sendMessageToClient(clientWebSocket, MONITOR_BBG_FAILURE_EVENT_NAME, null);
         }, MONITOR_BBG_SEND_REQUEST_TIME_OUT);
 
-        sendRequestToMonitorBBG(GET_DECIBEL_EVENT_NAME + "\n");
+        sendRequestToMonitorBBG(GET_DECIBEL_EVENT_NAME);
     });
 
     clientWebSocket.on(GET_TEMPERATURE_DATASET_EVENT_NAME, function() {
@@ -121,6 +113,26 @@ function waitForClientUIRequest(clientWebSocket) {
         clientWebSocket.emit( GET_DECIBEL_DATASET_EVENT_NAME, getDatasetFromFile(SOUND_DATA_FILE_NAME) );
     });
 };
+
+function openSocket(){
+    console.log("retry connection");
+    alarmBBGSocket = net.connect(ALARM_BBG_LISTEN_PORT, ALARM_BBG_LISTEN_ADDR);
+    alarmBBGSocket.setKeepAlive(true);
+    alarmBBGSocket.on('connect', onConnect.bind({}, alarmBBGSocket));
+    alarmBBGSocket.on('error', onError.bind({}, alarmBBGSocket));
+}
+
+function onConnect(){
+    clearTimeout(TCPReconnectionTimeout);
+    redirectAlarmBBGResponseToClient(webSocket);
+}
+
+function onError(){
+    alarmBBGSocket.destroy();
+    alarmBBGSocket.unref();
+
+    TCPReconnectionTimeout = setTimeout(openSocket, ALARM_BBG_SEND_REQUEST_TIME_OUT);
+}
 
 function sendRequestToMonitorBBG(data) {
     var buffer = new Buffer(data);

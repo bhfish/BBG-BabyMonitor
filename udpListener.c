@@ -194,9 +194,6 @@ static void *StartListenerThread(void *args)
         // it's ok to failed to receive a message from client because of UDP. Just wait for the next message
         msgLenFromClient = recvfrom(serverSocketFD, recvMsg, MAX_RECV_MSG_LENGTH, 0, (struct sockaddr*)&clientAddr, &clientAddrLen);
 
-        // remove the trialling new line character since user will hit "Enter" key to supply the request
-        recvMsg[strlen(recvMsg) - 1] = '\0';
-
         if (msgLenFromClient == -1)
         {
             // exit the program if catched any other errors other than unavailable client message

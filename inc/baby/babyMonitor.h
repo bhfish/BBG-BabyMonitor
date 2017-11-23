@@ -9,7 +9,4 @@
 // get the running status of the baby monitor system
 _Bool BabayMonitor_isSystemRunning(void);
 
-// *********NOTE********** ONLY the UDP server can make this request! afterwards, the baby monitor system will be restarted
-void BabayMonitor_requestSystemRestart(void);
-
 #endif
