@@ -8,11 +8,9 @@
 #include "tcpSender.h"
 #include "udpListener.h"
 #include "temperatureMonitor.h"
-#include "accelerometerMonitor.h"
 #include "Microphone.h"
 #include "videoStreaming.h"
 
-static _Bool restartReqSent = false;
 static _Bool isSystemRunning = false;
 
 static void startBabyMonitor(void);
@@ -38,15 +36,8 @@ int main(int argc, char const *argv[])
     return 0;
 }
 
-// *********NOTE********** ONLY the UDP server can make this request!
-void BabayMonitor_requestSystemRestart(void)
-{
-    restartReqSent = true;
-}
-
 _Bool BabayMonitor_isSystemRunning(void)
 {
-    // TODO get the status of parent's BBG
     return isSystemRunning;
 }
 
@@ -56,7 +47,7 @@ static void startBabyMonitor(void)
     /*
         baby's BBG startup sequence should follow the order of
         1) video/sound
-        2) sender
+        2) sender (communication to parent's BBG)
         3) UDP server (user web interface)
         4) other modules
     */
@@ -66,7 +57,6 @@ static void startBabyMonitor(void)
 
         return;
     }
-
 
     if ( !Microphone_startListening() ) {
         printf("[ERROR] failed to init microphone module\n");
@@ -82,12 +72,6 @@ static void startBabyMonitor(void)
 
     if ( !UDPListener_startListening() ) {
         printf("[ERROR] failed to init UDP listener module\n");
-
-        return;
-    }
-
-    if ( !AccelerometerMonitor_startMonitoring() ) {
-        printf("[ERROR] failed to init accelerometerMonitor module\n");
 
         return;
     }
@@ -114,7 +98,6 @@ static void stopBabyMonitor(void)
 
     Video_stopStreaming();
     TCPSender_cleanUp();
-    AccelerometerMonitor_stopMonitoring();
     TemperatureMonitor_stopMonitoring();
     DataRecorder_stopRecording();
     UDPListener_stopListening();

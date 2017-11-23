@@ -57,11 +57,7 @@ static void* startStreamVideo()
 
 	if(child_pid>0)
 	{
-		if (execl("/bin/sh", "sh", "-c", command, (char *) 0) == -1) {
-			printf("[ERROR] failed to run videoCapture\n");
-
-			exit(EXIT_FAILURE);
-		}
+		execl("/bin/sh", "sh", "-c", command, (char *) 0);
 	}else if(child_pid==0)
 	{
 		wait(NULL);
@@ -80,7 +76,7 @@ _Bool Video_startStreaming(void)
 
 	//Start new thread
 	rt = pthread_create(&video_thread, NULL,  (void *)&startStreamVideo, NULL);
-    	if( rt )
+    if( rt )
 	{
 		printf("Thread creation failed: %d\n", rt);
 		return false;
