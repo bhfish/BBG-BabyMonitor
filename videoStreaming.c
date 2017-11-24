@@ -55,6 +55,7 @@ static void* startStreamVideo()
 		printf("[ERROR] failed to fork child process for video streaming: %s\n", strerror(errno));
 	}
 
+
 	if(child_pid==0)
 	{
 		if (execl("/bin/sh", "sh", "-c", command, (char *) 0) == -1) {
