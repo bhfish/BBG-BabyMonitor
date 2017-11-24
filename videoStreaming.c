@@ -9,7 +9,7 @@
 #include <errno.h>
 
 //bool progRun = true;
-static char* command = "./video/captureVideo -F -o -c0|ffmpeg -vcodec mjpeg -i pipe:0 -f mjpeg udp://192.168.7.1:1234";
+static char* command = "./video/captureVideo -F -o -c0|ffmpeg -vcodec mjpeg -i pipe:0 -f mjpeg udp://127.0.0.1:1234";
 static pthread_t video_thread;
 //static _Bool stopStreaming = false;
 static pid_t child_pid;
