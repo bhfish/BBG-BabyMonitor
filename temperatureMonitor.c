@@ -8,6 +8,7 @@
 #include "A2D.h"
 #include "dataRecorder.h"
 #include "temperatureMonitor.h"
+#include "watchDog.h"
 
 #define TMP36_AIN_NUM                           3
 
@@ -98,7 +99,9 @@ void TemperatureMonitor_stopMonitoring(void)
 // define the duty of temperature thread
 static void *startTemperatureThread(void *args)
 {
-    int A2DReadingVal;
+    int watchDogRefID, watchDogTimer, A2DReadingVal;
+    int watchDogTimerCnt = 0;
+    _Bool wasWatchDogRegisterationSuccess;
     float convertedVoltageVal;
     struct timespec monitorTime;
     struct timespec remainTime;
@@ -106,6 +109,8 @@ static void *startTemperatureThread(void *args)
     monitorTime.tv_sec = MONITOR_TIME_INTERVAL_IN_S;
     monitorTime.tv_nsec = 0;
 
+    wasWatchDogRegisterationSuccess = WatchDog_registerToWatchDog(&watchDogRefID);
+    watchDogTimer = WatchDog_getWatchDogTimeout();
 
     while (!stopMonitoring) {
         A2DReadingVal = A2D_getAnalogReading(TMP36_AIN_NUM);
@@ -138,6 +143,13 @@ static void *startTemperatureThread(void *args)
         TCPSender_sendDataToParentBBG(TEMPERATURE, currentTemperature);
 
         nanosleep(&monitorTime, &remainTime);
+        watchDogTimerCnt++;
+
+        if (watchDogTimerCnt == watchDogTimer && wasWatchDogRegisterationSuccess) {
+            // it's time to kick the watch dog
+            WatchDog_kickWatchDog(watchDogRefID);
+            watchDogTimerCnt = 0;
+        }
     }
 
     pthread_exit(PTHREAD_CANCELED);
