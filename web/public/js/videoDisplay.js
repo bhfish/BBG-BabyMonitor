@@ -5,14 +5,14 @@ $(function(){
 	var iosocket = io.connect('http://192.168.7.2:8088');
 	iosocket.on('connect', function () {
 			
-                $('#video-status').append($('<li>Connected</li>'));
+                $('#video-status').html($('<li>Connected</li>'));
 				
 		iosocket.on('disconnect', function() {
-                    $('#video-status').append('<li>Disconnected</li>');
+                    $('#video-status').html('<li>Disconnected</li>');
                 });
 				
                 iosocket.on('message', function(message) {
-                    $('#video-status').append($('<li></li>').text(message));
+                    $('#video-status').html($('<li></li>').text(message));
 					console.log(message);
                 });
 			
@@ -27,8 +27,8 @@ $(function(){
 				imageObject.onload = function(){
 					context.height = imageObject.height;
 					context.width = imageObject.width;
-					console.log(imageObject.width);
-					console.log(imageObject.height);
+					console.log("frame width: "+imageObject.width +", height: "+imageObject.height);
+					//console.log(imageObject.height);
 					context.drawImage(imageObject,0,0,context.width,context.height);
 				}		
 			} catch(e){
