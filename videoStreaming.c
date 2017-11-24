@@ -80,7 +80,7 @@ _Bool Video_startStreaming(void)
 
 	//Start new thread
 	rt = pthread_create(&video_thread, NULL,  (void *)&startStreamVideo, NULL);
-    	if( rt )
+    if( rt )
 	{
 		printf("Thread creation failed: %d\n", rt);
 		return false;

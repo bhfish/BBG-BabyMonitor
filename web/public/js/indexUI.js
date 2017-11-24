@@ -24,7 +24,7 @@ var decibelChartObj = undefined;
 var isMonitorRunning = false;
 var isAlarmRunning = false;
 
-var temperatureCTX = $("#temperatureChart")[0].getContext('2d')
+var temperatureCTX = $("#temperatureChart")[0].getContext('2d');
 var decibelCTX = $("#decibelChart")[0].getContext('2d');
 
 // client side js begins here
@@ -156,6 +156,8 @@ function waitForNodeServerResponse() {
         isMonitorRunning = false;
         displayMonitorStatus("Inactive");
         displayErrorMessage(SYSTEM_ERROR_MESSAGE);
+        displayTemperature("Unknown");
+        displayDecibel("Unknown");
 
         // destroy the graphs on the web if monitor BBG is not running
         destroyAllGraph();
@@ -293,9 +295,11 @@ function displayDefaultValues() {
 function destroyAllGraph() {
     if (temperatureChartObj) {
         temperatureChartObj.destroy();
+        temperatureChartObj = undefined;
     }
 
     if (decibelChartObj) {
         decibelChartObj.destroy();
+        decibelChartObj = undefined;
     }
 }

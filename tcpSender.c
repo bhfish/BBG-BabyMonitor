@@ -8,7 +8,7 @@
 #include <unistd.h>     // close
 #include <netdb.h>      // sockaddr_in
 #include <arpa/inet.h>  // inet_pton
-#include <signal.h>     // sigignore
+#include <signal.h>     // signal
 #include "tcpSender.h"
 
 #define MAX_SEND_MSG_LEN            500
@@ -21,6 +21,7 @@
 static int clientSocketFD;
 static struct sockaddr_in parentBBGAddr;
 static _Bool wasConnectionSuccess;
+static pthread_mutex_t connectionFlagMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void getFormatedMsg(DATA_CATEGORY CATEGORY, int dataVal, char *message);
 static void keepTCPClientAlive(int connectionErrNum);
@@ -31,12 +32,21 @@ _Bool TCPSender_init(void)
 {
     if ( !initTCPSocket() ) {
         printf("[ERROR] failed to initialize a client socket to communicate to parent's BBG\n");
-        wasConnectionSuccess = false;
+
+        pthread_mutex_lock(&connectionFlagMutex);
+        {
+            wasConnectionSuccess = false;
+        }
+        pthread_mutex_unlock(&connectionFlagMutex);
 
         return false;
     }
 
-    wasConnectionSuccess = true;
+    pthread_mutex_lock(&connectionFlagMutex);
+    {
+        wasConnectionSuccess = true;
+    }
+    pthread_mutex_unlock(&connectionFlagMutex);
 
     return true;
 }
@@ -150,7 +160,12 @@ static void keepTCPClientAlive(int connectionErrNum)
             be able to access to baby's video streaming
         */
         signal(SIGPIPE, SIG_IGN);
-        wasConnectionSuccess = false;
+
+        pthread_mutex_lock(&connectionFlagMutex);
+        {
+            wasConnectionSuccess = false;
+        }
+        pthread_mutex_unlock(&connectionFlagMutex);
     }
 }
 
