@@ -50,7 +50,7 @@ static void tcpServerTask(void)
     fd_set activeFD, readFD;
 
     // WILSON, a bug here. have to explicitly set stopping to false; otherwise, sometimes the following codes won't run
-    stopping = false;
+    //stopping = false;
 	//char tx_buffer[TX_BUFLEN];
 	//int res;
 	int numberOfConnection;
@@ -64,7 +64,7 @@ static void tcpServerTask(void)
     FD_SET (socketfd, &activeFD);
 
     // TCP server referenced from: http://www.gnu.org/software/libc/manual/html_node/Server-Example.html
-	while(!stopping)
+	while(!isStopping())
 	{
         char clientIPAddrName[100] = {0};
         readFD = activeFD;
@@ -102,7 +102,7 @@ static void tcpServerTask(void)
                             //printf("Here is the message: %s\n",rx_buffer);
                             if (strlen(tx_buffer) != 0){
                                 inet_ntop(AF_INET, &tcp_client.sin_addr.s_addr, clientIPAddrName, INET_ADDRSTRLEN);
-                                int numBytesWrite = write(i, tx_buffer, strlen(tx_buffer));
+                                int numBytesWrite = write(newsocketfd, tx_buffer, strlen(tx_buffer));
                                 printf("...[TCP]Reply: %s, size %d to %s\n",tx_buffer, numBytesWrite, clientIPAddrName);
                             }
                         }
@@ -221,7 +221,7 @@ static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer)
         	if (getAlarmSleepStatus()) {
             	printf("...[TCP]Alarm in sleep mode, will not trigger alarm.\n");
              } else {
-             	alarmTriggered = true;
+                setAlarmTrigger(true);
              	printf("...[TCP]Alarm trigger received.\n");
              }
 
@@ -236,22 +236,24 @@ static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer)
         }
         else if(strcmp("close", token) == 0)
         {
-            tcpServerCleanup();
+            stopProg();
+            //tcpServerCleanup();
             printf("Now close the program\n");
         }
         else {
             if (strcmp("temperature", token) == 0) {
                 token = strtok(NULL, DELIM);
-                int babyRoomTemp = atoi(token);
+                int roomTemp = atoi(token);
 
-                printf("Temperature is %d\n", babyRoomTemp);
+                setBbyRoomTemp(roomTemp);
+                printf("Temperature is %d\n", roomTemp);
             }
             else if (strcmp("sound", token) == 0) {
                 token = strtok(NULL, DELIM);
-                int babySoundLevel = atoi(token);
+                int sound = atoi(token);
 
-                setBbySoundLevel(babySoundLevel);
-                printf("SOUND is %d\n", babySoundLevel);
+                setBbySoundLevel(sound);
+                printf("SOUND is %d\n", sound);
             }
         }
 

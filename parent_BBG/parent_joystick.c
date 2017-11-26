@@ -54,7 +54,7 @@ static joystkDrctn_t getJsDrctn(void)
 **/
 static void joystkTask(void) 
 {
-	while(!stopping)
+	while(!isStopping())
 	{
 		joystkDirection = getJsDrctn();
 		nanosleep(&delay100ms, NULL);

@@ -233,18 +233,24 @@ int pmwBuzzPlay(songArr* node, int pos)
 
 void pmwBuzzSelectPrv(void)
 {
-    alarmBuzzMode--;
-    if (alarmBuzzMode < 0){
-        alarmBuzzMode = (SONGS_TOTAL - 1);
+    int buzzMode = getAlarmBuzzMode();
+
+    buzzMode--;
+    if (buzzMode < 0){
+        buzzMode = (SONGS_TOTAL - 1);
     }
+    setAlarmBuzzMode(buzzMode);
 }
 
 void pmwBuzzSelectNext(void)
-{
-    alarmBuzzMode++;
-    if (alarmBuzzMode >= SONGS_TOTAL){
-        alarmBuzzMode = 0;
+{   
+    int buzzMode = getAlarmBuzzMode();
+
+    buzzMode++;
+    if (buzzMode >= SONGS_TOTAL){
+        buzzMode = 0;
     }
+    setAlarmBuzzMode(buzzMode);
 }
 
 void pmwBuzzTask(void)
@@ -252,17 +258,18 @@ void pmwBuzzTask(void)
 	static int pos  = 0;
 	static int songMode;
 
-	songMode = alarmBuzzMode;
+	songMode = getAlarmBuzzMode();
 
-	while(!stopping)
+	while(!isStopping())
 	{
-		if(alarmTriggered && alarmStateArm)
+		if(getAlarmTrigger() && getAlarmArm())
 		{
+            int buzzMode = getAlarmBuzzMode();
+
 			//Check if the alarm sound is changed
-			if(songMode != alarmBuzzMode)
+			if(songMode != buzzMode)
 			{
-printf("...[debug] Alarm song changed.\n");
-				songMode = alarmBuzzMode;
+				songMode = buzzMode;
 				pos = 0;
 			}
 			
@@ -375,6 +382,11 @@ int pmwBuzzLoop(void)
 	nanosleep(&delay100ms, NULL);
 
 	return res;
+}
+
+void pmwBuzzCleanUp(void)
+{
+    pthread_join( buzzer_thread, NULL);
 }
 
 int pmwBuzzInit(void)

@@ -13,19 +13,27 @@ typedef enum
 	dispModeSound
 }dispMode_t;
 
-//Program state settings
-extern bool stopping;
+void stopProg(void);
+bool isStopping(void);
 
-extern bool alarmTriggered;
-extern bool alarmStateArm;
-extern int alarmBuzzMode;
-extern int babySoundLevel;
-extern int babyRoomTemp;
-extern dispMode_t currentDispMode;
+void setAlarmTrigger(bool trigger);
+bool getAlarmTrigger(void);
+
+void setAlarmArm(bool alarmArm);
+bool getAlarmArm(void);
+
+void setAlarmBuzzMode(int mode);
+int getAlarmBuzzMode(void);
+
+void setBbyRoomTemp(int temp);
+int getBbyRoomTemp(void);
 
 void setBbySoundLevel(int sound);
 int getBbySoundLevel(void);
+
+void setDispMode(dispMode_t mode);
 dispMode_t getDispMode(void);
+
 bool getSysInitStatus(void);
 bool getAlarmSleepStatus(void);
 

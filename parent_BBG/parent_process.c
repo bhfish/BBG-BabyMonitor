@@ -24,20 +24,81 @@
 #define BUZZER_ALARM_SLEEP_CNTR_MAX  300
 
 //Program state settings
-bool stopping = false;
-bool alarmTriggered = false;
+static bool stopping = false;
+static bool alarmTriggered = false;
 static bool alarmSleep = false;
-bool alarmStateArm  = false;
-bool sysInitStatusFlag = false;
-int alarmBuzzMode   = 0;
-int babySoundLevel  = 0;
-int babyRoomTemp    = 0;
-dispMode_t currentDispMode = dispModeAlarmArm;
+static bool alarmStateArm  = false;
+static bool sysInitStatusFlag = false;
+static int alarmBuzzMode   = 0;
+static int babySoundLevel  = 0;
+static int babyRoomTemp    = 0;
+static dispMode_t currentDispMode = dispModeAlarmArm;
+pthread_t process_thread;
 
+
+void process(void);
+int processInit(void);
+void processCleanUp(void);
+
+
+void stopProg(void)
+{
+    stopping = true;
+}
+
+bool isStopping(void)
+{
+    return stopping;
+}
 
 dispMode_t getDispMode(void)
 {
     return currentDispMode;
+}
+
+void setDispMode(dispMode_t mode)
+{
+    currentDispMode = mode;
+}
+
+void setAlarmBuzzMode(int mode)
+{
+    alarmBuzzMode = mode;
+}
+
+void setAlarmTrigger(bool trigger)
+{
+    alarmTriggered = trigger;
+}
+
+bool getAlarmTrigger(void)
+{
+    return alarmTriggered;
+}
+
+void setAlarmArm(bool alarmArm)
+{
+    alarmStateArm = alarmArm;
+}
+
+bool getAlarmArm(void)
+{
+    return alarmStateArm;
+}
+
+int getAlarmBuzzMode(void)
+{
+    return alarmBuzzMode;
+}
+
+void setBbyRoomTemp(int temp)
+{
+    babyRoomTemp = temp;
+}
+
+int getBbyRoomTemp(void)
+{
+    return babyRoomTemp;
 }
 
 void setBbySoundLevel(int sound)
@@ -60,6 +121,36 @@ bool getSysInitStatus(void)
     return sysInitStatusFlag;
 }
 
+int processInit(void)
+{
+    int res = 0;
+
+    //Initialize program state variables
+    stopping = false;
+    alarmTriggered = false;
+    alarmSleep = false;
+    alarmStateArm  = false;
+    sysInitStatusFlag = false;
+    alarmBuzzMode   = 0;
+    babySoundLevel  = 0;
+    babyRoomTemp    = 0;
+    currentDispMode = dispModeAlarmArm;
+
+	res = pthread_create(&process_thread, NULL,  (void *)&process, NULL);
+    if( res )
+	{
+		printf("Thread process creation failed: %d\n", res);
+		return -1;	
+	}
+
+	return res;
+}
+
+void processCleanUp(void)
+{
+    pthread_join( process_thread, NULL);
+}
+
 void process(void)
 {
 //	static int i = 1;
@@ -68,7 +159,7 @@ void process(void)
     joystkDrctn_t jsDirCurrent = JOYST_NONE;
     static unsigned int alarmCntr = 0;
 
-	while(!stopping)
+	while(!isStopping())
 	{
 //        if (babySoundLevel > SOUND_ALARM_TRIGGER_THRESHOLD){
 //            alarmTriggered = true;
@@ -188,7 +279,7 @@ int main(int argc, char *argv[])
 {
 	int rt = 0;
 //	pthread_t js_thread;
-	pthread_t process_thread;
+//	pthread_t process_thread;
 
     //Turn on bus
     //fileWriteS(DEVICEs_SLOTS, "BB-I2C1");
@@ -218,6 +309,11 @@ int main(int argc, char *argv[])
         printf("...[SysInit]Joy stick thread creation failed: %d\n", rt);
     }
 
+    if (rt == 0){
+        rt = processInit();
+    } else {
+        printf("...[SysInit]main process thread creation failed: %d\n", rt);
+    }
 
     //segDispInit();
     //
@@ -229,7 +325,11 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-
+	while(!isStopping())
+	{
+        //Delay
+        nanosleep(&delay1s, NULL);
+    }
 /*
 	rt = pthread_create(&js_thread, NULL,  (void *)&joystkInit, NULL);
     if( rt )
@@ -237,7 +337,7 @@ int main(int argc, char *argv[])
 		printf("Thread creation failed: %d\n", rt);
 		return -1;	
 	}
-*/
+
 
 	rt = pthread_create(&process_thread, NULL,  (void *)&process, NULL);
     if( rt )
@@ -245,13 +345,18 @@ int main(int argc, char *argv[])
 		printf("Thread creation failed: %d\n", rt);
 		return -1;	
 	}
+*/
 
 //	pthread_join( js_thread, NULL);
-	pthread_join( process_thread, NULL);
-	pthread_join( buzzer_thread, NULL);
-	pthread_join( digiDisplay_thread, NULL);
+//	pthread_join( process_thread, NULL);
+//	pthread_join( buzzer_thread, NULL);
+//	pthread_join( digiDisplay_thread, NULL);
 //	pthread_join( tcpServerThreadId, NULL);
 
+    processCleanUp();
     tcpServerCleanup();
-	return 0;
+    pmwBuzzCleanUp();
+    digiDispCleanUp();
+
+    return 0;
 }

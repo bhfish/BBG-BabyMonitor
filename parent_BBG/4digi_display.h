@@ -7,7 +7,7 @@ extern pthread_t digiDisplay_thread;
 
 int digiDispNum(int num);
 int digiDispInit(void);
-
+void digiDispCleanUp(void);
 void digiTest(void);
 void digiTest1(void);
 

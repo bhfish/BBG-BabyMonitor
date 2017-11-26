@@ -52,11 +52,13 @@ static _Bool stopped = false;
 
 static void segDisplayLeft(void)
 {
+    int dispMode = (int)getDispMode();
+
     gpioWriteD(GPIO_PIN_ZEN_DISP_LEFT, 0);
     gpioWriteD(GPIO_PIN_ZEN_DISP_RIGHT, 0);
 
-    writeI2cReg(segDispFd, REG_OUTA, segDispState[currentDispMode][SEG_DISP_CHAR_LEFT_DOWN]);
-    writeI2cReg(segDispFd, REG_OUTB, segDispState[currentDispMode][SEG_DISP_CHAR_LEFT_UP]);
+    writeI2cReg(segDispFd, REG_OUTA, segDispState[dispMode][SEG_DISP_CHAR_LEFT_DOWN]);
+    writeI2cReg(segDispFd, REG_OUTB, segDispState[dispMode][SEG_DISP_CHAR_LEFT_UP]);
     
     gpioWriteD(GPIO_PIN_ZEN_DISP_LEFT, 1);
 
@@ -65,11 +67,13 @@ static void segDisplayLeft(void)
 
 static void segDisplayRight(void)
 {
+    int dispMode = (int)getDispMode();
+
     gpioWriteD(GPIO_PIN_ZEN_DISP_LEFT, 0);
     gpioWriteD(GPIO_PIN_ZEN_DISP_RIGHT, 0);
 
-    writeI2cReg(segDispFd, REG_OUTA, segDispState[currentDispMode][SEG_DISP_CHAR_RIGHT_DOWN]);
-    writeI2cReg(segDispFd, REG_OUTB, segDispState[currentDispMode][SEG_DISP_CHAR_RIGHT_UP]);
+    writeI2cReg(segDispFd, REG_OUTA, segDispState[dispMode][SEG_DISP_CHAR_RIGHT_DOWN]);
+    writeI2cReg(segDispFd, REG_OUTB, segDispState[dispMode][SEG_DISP_CHAR_RIGHT_UP]);
     
     gpioWriteD(GPIO_PIN_ZEN_DISP_RIGHT, 1);
 

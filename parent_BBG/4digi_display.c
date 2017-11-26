@@ -246,30 +246,62 @@ int digiDispNum(int num)
 
 static void digiDispTask(void)
 {
-	while(!stopping)
+	while(!isStopping())
 	{
-		if(currentDispMode == dispModeAlarmArm)
+		dispMode_t dispMode = getDispMode();
+
+		if(dispMode == dispModeAlarmArm)
 		{	
-			if(alarmStateArm)
+			if(getAlarmArm())
 				//Display '1111' if armed 
 				digiDispNum(1111);
 			else
 				//Display '0000' if not armed
 				digiDispNum(0);
 		}
-		else if(currentDispMode == dispModeAlarmSound)
+		else if(dispMode == dispModeAlarmSound)
 
 			//Display current buzzer mode number
-			digiDispNum(alarmBuzzMode);
+			digiDispNum(getAlarmBuzzMode());
 
-		else if(currentDispMode == dispModeTemp)
-			digiDispNum(babyRoomTemp);
+		else if(dispMode == dispModeTemp)
+			digiDispNum(getBbyRoomTemp());
 
-		else if(currentDispMode == dispModeSound)
-			digiDispNum(babySoundLevel);
+		else if(dispMode == dispModeSound)
+			digiDispNum(getBbySoundLevel());
 
 		nanosleep(&delay100ms, NULL);	
 	}
+}
+
+void digiDispCleanUp(void)
+{
+	//Start clear to display
+	digiDispStartInput();
+	digiDispWrite(CMD_AUTO_ADDR);
+	digiDispStopInput();
+
+	//Write data
+	digiDispStartInput();
+	digiDispWrite(START_ADDR);
+
+    //clear four digits
+    digiDispWrite(0);
+    digiDispWrite(0);
+    digiDispWrite(0);
+    digiDispWrite(0);
+
+	digiDispStopInput();
+
+	//Stop writing
+	digiDispStartInput();
+	digiDispWrite(DISPLAY_ON | 0x07);
+	digiDispStopInput();
+
+	fileWriteD(GPIO_UNEXPORT, GPIO_PIN_DISPLAY_DIO);
+	fileWriteD(GPIO_UNEXPORT, GPIO_PIN_DISPLAY_CLK);
+
+	pthread_join( digiDisplay_thread, NULL);
 }
 
 int digiDispInit(void)

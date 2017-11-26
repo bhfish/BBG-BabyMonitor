@@ -6,7 +6,6 @@
 #include "parent_gpio.h"
 #include <pthread.h>
 
-extern pthread_t buzzer_thread;
 
 int pmwBuzzOn(void);
 int pmwBuzzOff(void);
@@ -15,6 +14,7 @@ int pmwBuzzSound(int mode);
 int pmwBuzzModeDefault(void);
 int pmwBuzzLoop(void);
 int pmwBuzzInit(void);
+void pmwBuzzCleanUp(void);
 void pmwBuzzSelectPrv(void);
 void pmwBuzzSelectNext(void);
 
