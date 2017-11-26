@@ -7,8 +7,10 @@
 #include <fcntl.h>              // open
 #include <errno.h>              // errno
 #include <string.h>             // strerror
+#include "babyMonitor.h"
 
-#define WATCH_DOG_REFRESH_KICK_INTERVAL_IN_S    30
+#define CONFIG_WATCH_DOG_TIME_OUT_IN_S          60
+#define WATCH_DOG_KICK_INTERVAL_IN_S            40
 
 // this module only expects to manage no more than 10 clients who tried to register to the watch dog service
 #define MAX_NUM_REGISTERED_CLIENTS              10
@@ -33,8 +35,6 @@ static void *startWatchDogThread(void *args);
 
 _Bool WatchDog_initWatchDog(void)
 {
-    const int WATCH_DOG_KICK_WINDOW_IN_S = 60;
-
     srand(time(NULL));
 
     for (int i = 0; i < MAX_NUM_REGISTERED_CLIENTS; ++i)
@@ -52,7 +52,7 @@ _Bool WatchDog_initWatchDog(void)
         return false;
     }
 
-    setWatchDogTimeout(WATCH_DOG_KICK_WINDOW_IN_S);
+    setWatchDogTimeout(CONFIG_WATCH_DOG_TIME_OUT_IN_S);
 
     if (pthread_create(&watchDogThread, NULL, startWatchDogThread, NULL) != 0) {
         printf("[ERROR] failed to create a thread in watchDog module reason: %s\n", strerror(errno));
@@ -147,7 +147,7 @@ void WatchDog_kickWatchDog(int clientRefID)
     printf("[WARN] watchDog: client reference %d unrecognized\n", clientRefID);
 }
 
-int WatchDog_getWatchDogTimeout(void)
+int WatchDog_getWatchDogTimer(void)
 {
     /*
         this value is hard coded because it has to be less than the timeout which configured by this module (60s) in order
@@ -183,7 +183,7 @@ static void *startWatchDogThread(void *args)
     struct timespec kickTime;
     struct timespec remainTime;
 
-    kickTime.tv_sec = WATCH_DOG_REFRESH_KICK_INTERVAL_IN_S;
+    kickTime.tv_sec = WATCH_DOG_KICK_INTERVAL_IN_S;
     kickTime.tv_nsec = 0;
 
     while (true) {
@@ -204,6 +204,9 @@ static void *startWatchDogThread(void *args)
         if (isOKToKick) {
             kickWatchDog();
         }
+
+        // isOKToKick is an indication/flag to tell whether all registered clients to the watch dog service are running or not
+        BabayMonitor_setSystemRunningStatus(isOKToKick);
     }
 
     // bad things happened...

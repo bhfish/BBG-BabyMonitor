@@ -18,7 +18,7 @@ void WatchDog_deregisterFromWatchDog(int clientRefID);
 // kick the watch dog in order to prevent the watch dog timer from expired
 void WatchDog_kickWatchDog(int clientRefID);
 
-// get the current configured watch dog *HARD* timeout in seconds
-int WatchDog_getWatchDogTimeout(void);
+// get the current configured watch dog *HARD* timer in seconds
+int WatchDog_getWatchDogTimer(void);
 
 #endif

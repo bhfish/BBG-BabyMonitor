@@ -101,7 +101,7 @@ static void *startTemperatureThread(void *args)
 {
     int watchDogRefID, watchDogTimer, A2DReadingVal;
     int watchDogTimerCnt = 0;
-    _Bool wasWatchDogRegisterationSuccess;
+    _Bool wasRegistrationSuccess;
     float convertedVoltageVal;
     struct timespec monitorTime;
     struct timespec remainTime;
@@ -109,8 +109,8 @@ static void *startTemperatureThread(void *args)
     monitorTime.tv_sec = MONITOR_TIME_INTERVAL_IN_S;
     monitorTime.tv_nsec = 0;
 
-    wasWatchDogRegisterationSuccess = WatchDog_registerToWatchDog(&watchDogRefID);
-    watchDogTimer = WatchDog_getWatchDogTimeout();
+    wasRegistrationSuccess = WatchDog_registerToWatchDog(&watchDogRefID);
+    watchDogTimer = WatchDog_getWatchDogTimer() - 3;
 
     while (!stopMonitoring) {
         A2DReadingVal = A2D_getAnalogReading(TMP36_AIN_NUM);
@@ -145,7 +145,7 @@ static void *startTemperatureThread(void *args)
         nanosleep(&monitorTime, &remainTime);
         watchDogTimerCnt++;
 
-        if (watchDogTimerCnt == watchDogTimer && wasWatchDogRegisterationSuccess) {
+        if (watchDogTimerCnt == watchDogTimer && wasRegistrationSuccess) {
             // it's time to kick the watch dog
             WatchDog_kickWatchDog(watchDogRefID);
             watchDogTimerCnt = 0;
