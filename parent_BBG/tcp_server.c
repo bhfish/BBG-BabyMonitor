@@ -102,7 +102,7 @@ static void tcpServerTask(void)
                             //printf("Here is the message: %s\n",rx_buffer);
                             if (strlen(tx_buffer) != 0){
                                 inet_ntop(AF_INET, &tcp_client.sin_addr.s_addr, clientIPAddrName, INET_ADDRSTRLEN);
-                                int numBytesWrite = write(newsocketfd, tx_buffer, strlen(tx_buffer));
+                                int numBytesWrite = write(i, tx_buffer, strlen(tx_buffer));
                                 printf("...[TCP]Reply: %s, size %d to %s\n",tx_buffer, numBytesWrite, clientIPAddrName);
                             }
                         }
