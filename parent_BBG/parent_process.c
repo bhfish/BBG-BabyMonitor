@@ -24,11 +24,11 @@
 #define BUZZER_ALARM_SLEEP_CNTR_MAX  300
 
 //Program state settings
-static bool stopping = false;
-static bool alarmTriggered = false;
-static bool alarmSleep = false;
-static bool alarmStateArm  = false;
-static bool sysInitStatusFlag = false;
+static _Bool stopping = false;
+static _Bool alarmTriggered = false;
+static _Bool alarmSleep = false;
+static _Bool alarmStateArm  = false;
+static _Bool sysInitStatusFlag = false;
 static int alarmBuzzMode   = 0;
 static int babySoundLevel  = 0;
 static int babyRoomTemp    = 0;
@@ -46,7 +46,7 @@ void stopProg(void)
     stopping = true;
 }
 
-bool isStopping(void)
+_Bool isStopping(void)
 {
     return stopping;
 }
@@ -66,22 +66,22 @@ void setAlarmBuzzMode(int mode)
     alarmBuzzMode = mode;
 }
 
-void setAlarmTrigger(bool trigger)
+void setAlarmTrigger(_Bool trigger)
 {
     alarmTriggered = trigger;
 }
 
-bool getAlarmTrigger(void)
+_Bool getAlarmTrigger(void)
 {
     return alarmTriggered;
 }
 
-void setAlarmArm(bool alarmArm)
+void setAlarmArm(_Bool alarmArm)
 {
     alarmStateArm = alarmArm;
 }
 
-bool getAlarmArm(void)
+_Bool getAlarmArm(void)
 {
     return alarmStateArm;
 }
@@ -111,12 +111,12 @@ int getBbySoundLevel(void)
     return babySoundLevel;
 }
 
-bool getAlarmSleepStatus(void)
+_Bool getAlarmSleepStatus(void)
 {
     return alarmSleep;
 }
 
-bool getSysInitStatus(void)
+_Bool getSysInitStatus(void)
 {
     return sysInitStatusFlag;
 }

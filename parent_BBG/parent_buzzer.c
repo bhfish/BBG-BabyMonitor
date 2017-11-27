@@ -85,7 +85,7 @@ typedef struct{
 
 static buzzNode_t songList[2];
 static pthread_t buzzer_thread;
-static bool buzzLoop;
+static _Bool buzzLoop;
 static int buzzPeriodList[BUZZ_MODE_TOTAL];
 
 

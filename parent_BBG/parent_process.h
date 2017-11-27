@@ -14,13 +14,13 @@ typedef enum
 }dispMode_t;
 
 void stopProg(void);
-bool isStopping(void);
+_Bool isStopping(void);
 
-void setAlarmTrigger(bool trigger);
-bool getAlarmTrigger(void);
+void setAlarmTrigger(_Bool trigger);
+_Bool getAlarmTrigger(void);
 
-void setAlarmArm(bool alarmArm);
-bool getAlarmArm(void);
+void setAlarmArm(_Bool alarmArm);
+_Bool getAlarmArm(void);
 
 void setAlarmBuzzMode(int mode);
 int getAlarmBuzzMode(void);
@@ -34,7 +34,7 @@ int getBbySoundLevel(void);
 void setDispMode(dispMode_t mode);
 dispMode_t getDispMode(void);
 
-bool getSysInitStatus(void);
-bool getAlarmSleepStatus(void);
+_Bool getSysInitStatus(void);
+_Bool getAlarmSleepStatus(void);
 
 #endif
