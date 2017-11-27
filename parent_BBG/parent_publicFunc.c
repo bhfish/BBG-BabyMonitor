@@ -28,14 +28,12 @@ int fileWriteD(char* filePath, int value)
 
 	pfile = fopen(filePath, "w");
 
-	if (pfile == NULL) 
-	{
+	if (pfile == NULL) {
 		printf("ERROR: Unable to open %s for write.\n", filePath);
 		return -1;
 	}
 
-	if (fprintf(pfile, "%d", value) <= 0) 
-	{ 
+	if (fprintf(pfile, "%d", value) <= 0) { 
 		printf("ERROR: Writing data to %s.\n", filePath);
 		res = -1;
 	}
@@ -52,14 +50,12 @@ int fileWriteS(char* filePath, char* value)
 
 	pfile = fopen(filePath, "w");
 
-	if (pfile == NULL) 
-	{
+	if (pfile == NULL) {
 		printf("ERROR: Unable to open %s for write.\n", filePath);
 		return -1;
 	}
 
-	if (fprintf(pfile, "%s", value) <= 0) 
-	{ 
+	if (fprintf(pfile, "%s", value) <= 0) { 
 		printf("ERROR: Writing data to %s.\n", filePath);
 		res = -1;
 	}
@@ -76,8 +72,7 @@ int fileReadD(char* filePath)
 
 	pfile = fopen(filePath, "r");
 
-	if (pfile == NULL) 
-	{
+	if (pfile == NULL) {
 		printf("ERROR: Unable to open %s for read.\n", filePath);
 		return -1;
 	}

@@ -37,47 +37,39 @@ static int setDio(int val);
 static void digiDispStartInput(void);
 static void digiDispStopInput(void);
 static void digiDispWrite(char data);
-
-pthread_t digiDisplay_thread;
+static pthread_t digiDisplay_thread;
 //static char convertChar(char ch,_Bool colon);
 
 
-
-//400ns delay
+/**
+* Delay 1us
+**/
 static void wait1(void)
 {
-	nanosleep(&delay1us, NULL);
+    sleep_usec(1);
 }
 
+/**
+* Write to 4digit-display clock line
+**/
 static int setClk(int val)
 {
 	int res = fileWriteD(GPIO_VALUE_FILE_PATH(GPIO_PIN_DISPLAY_CLK), val);
 	return res;
 }
 
+/**
+* Write to 4digit-display data line
+**/
 static int setDio(int val)
 {
 	int res = fileWriteD(GPIO_VALUE_FILE_PATH(GPIO_PIN_DISPLAY_DIO), val);
 	return res;
 }
 
-/*
-static int setGpioClkIn()
-{
-	int res = 0;
-	char* value = "in";
-
-	res = fileWriteS(GPIO_DRCTN_FILE_PATH(GPIO_PIN_DISPLAY_CLK), &value);
-
-	if(res != 0)
-	{
-		printf("...Error: Set GPIO Clk direction in.\n");
-	}
-
-	return res;
-}
-*/
-
+/**
+* Set direction of clk gpio to be output
+**/
 static int setGpioClkOut()
 {
 	int res = 0;
@@ -92,7 +84,9 @@ static int setGpioClkOut()
 	return res;
 }
 
-
+/**
+* Set direction of data gpio to be input
+**/
 static int setGpioDioIn()
 {
 	int res = 0;
@@ -107,6 +101,9 @@ static int setGpioDioIn()
 	return res;
 }
 
+/**
+* Set direction of data gpio to be output
+**/
 static int setGpioDioOut()
 {
 	int res = 0;
@@ -121,6 +118,9 @@ static int setGpioDioOut()
 	return res;
 }
 
+/**
+* Start send data to 4digit-display
+**/
 static void digiDispStartInput(void)
 {
 	/*
@@ -133,6 +133,9 @@ static void digiDispStartInput(void)
 	wait1();
 }
 
+/**
+* Stop send data to 4digit-display
+**/
 static void digiDispStopInput(void)
 {
 	/*
@@ -148,6 +151,9 @@ static void digiDispStopInput(void)
 }
 
 
+/**
+* Send data to 4digit-display
+**/
 static void digiDispWrite(char data)
 {
 	/*
@@ -179,27 +185,12 @@ static void digiDispWrite(char data)
 	setGpioDioOut();
 }
 
-/*
-static char convertChar(char ch,_Bool colon)
-{
-	char val=0;
-	if((ASCII_0<=ch)&&(ch<=ASCII_9))
-	{
-		val=displayDigits[ch-ASCII_0];
-	}
-	if(colon)
-	{
-		return val|COLON_FLAG;
-	}
-	return val;
-}
-*/
 
+/**
+* Display number on 4digit-display
+**/
 int digiDispNum(int num)
 {
-//	int i;
-//	int temp[NUM_DIGITS];
-
 	if(num < 0 || num > 9999)
 	{
 		printf("Error: 4Digi display invalid number: %d", num);
@@ -214,12 +205,7 @@ int digiDispNum(int num)
 	//Write data
 	digiDispStartInput();
 	digiDispWrite(START_ADDR);
-/*
-	for(i = 0; i< NUM_DIGITS; i++)
-	{
-		digiDispWrite(displayDigits[temp[i]]);
-	}
-*/
+
     //Write the first digit
     digiDispWrite(displayCharState[getDispMode()]);
 
@@ -232,9 +218,7 @@ int digiDispNum(int num)
     //Write the last digit
     digiDispWrite(displayDigits[num%10]);
 
-
 	digiDispStopInput();
-
 
 	//Stop writing
 	digiDispStartInput();
@@ -244,23 +228,23 @@ int digiDispNum(int num)
 	return 0;
 }
 
+/**
+* 4digit-display main task
+**/
 static void digiDispTask(void)
 {
-	while(!isStopping())
-	{
+	while(!isStopping()){
 		dispMode_t dispMode = getDispMode();
 
-		if(dispMode == dispModeAlarmArm)
-		{	
+		if(dispMode == dispModeAlarmArm){	
 			if(getAlarmArm())
 				//Display '1111' if armed 
 				digiDispNum(1111);
 			else
 				//Display '0000' if not armed
 				digiDispNum(0);
-		}
-		else if(dispMode == dispModeAlarmSound)
 
+		}else if(dispMode == dispModeAlarmSound)
 			//Display current buzzer mode number
 			digiDispNum(getAlarmBuzzMode());
 
@@ -270,10 +254,13 @@ static void digiDispTask(void)
 		else if(dispMode == dispModeSound)
 			digiDispNum(getBbySoundLevel());
 
-		nanosleep(&delay100ms, NULL);	
+		sleep_msec(100);	
 	}
 }
 
+/**
+* Thread cleanup
+**/
 void digiDispCleanUp(void)
 {
 	//Start clear to display
@@ -304,6 +291,9 @@ void digiDispCleanUp(void)
 	pthread_join( digiDisplay_thread, NULL);
 }
 
+/**
+* Thread initialization
+**/
 int digiDispInit(void)
 {
 	int res= 0;

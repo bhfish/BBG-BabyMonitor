@@ -12,8 +12,7 @@ static pthread_t jsThreadId;
 /**
 * Function to get joystick dirction
 **/
-joystkDrctn_t joystkDirGet(void)
-{
+joystkDrctn_t joystkDirGet(void){
     return joystkDirection;
 }
 
@@ -22,29 +21,17 @@ joystkDrctn_t joystkDirGet(void)
 **/
 static joystkDrctn_t getJsDrctn(void)
 {
-
-	if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSUP)))
-	{
+	if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSUP))){
 		return JOYST_UP;
-	}
-	else if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSDN)))
-	{
+	}else if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSDN))){
 		return JOYST_DOWN;
-	}
-	else if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSRT)))
-	{
+	}else if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSRT))){
 		return JOYST_RIGHT;
-	}
-	else if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSLFT)))
-	{
+	}else if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSLFT))){
 		return JOYST_LEFT;
-	}
-	else if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSPB)))
-	{
+	}else if(0 == fileReadD(GPIO_VALUE_FILE_PATH(GPIO_PIN_JSPB))){
 		return JOYST_PUSH;
-	}
-	else
-	{
+	}else{
 		return JOYST_NONE;
 	}	
 }
@@ -54,51 +41,52 @@ static joystkDrctn_t getJsDrctn(void)
 **/
 static void joystkTask(void) 
 {
-	while(!isStopping())
-	{
+	while(!isStopping()){
 		joystkDirection = getJsDrctn();
-		nanosleep(&delay100ms, NULL);
+        sleep_msec(100);
 	}
 }
 
-
+/**
+* Thread cleanup
+**/
 void joystCleanup(void)
 {
-
 	printf("...Stopping joystick thread.\n");
 	pthread_join(jsThreadId, NULL);
 }
 
-
+/**
+* Export GPIO
+**/
 static int joystkGpioExport(void)
 {
 	int res = 0;
 
 	res = fileWriteD(GPIO_EXPORT, GPIO_PIN_JSUP);
 
-	if(res == 0)
-	{
+	if(res == 0){
 		res = fileWriteD(GPIO_EXPORT, GPIO_PIN_JSPB);
 	}
 
-	if(res == 0)
-	{
+	if(res == 0){
 		res = fileWriteD(GPIO_EXPORT, GPIO_PIN_JSRT);
 	}
 
-	if(res == 0)
-	{
+	if(res == 0){
 		res = fileWriteD(GPIO_EXPORT, GPIO_PIN_JSDN);
 	}
 
-	if(res == 0)
-	{
+	if(res == 0){
 		res = fileWriteD(GPIO_EXPORT, GPIO_PIN_JSLFT);
 	}
 
 	return res;
 }
 
+/**
+* Set GPIO direction
+**/
 static int joystkGpioSetDrctnIn(void)
 {
 	int res = 0;
@@ -107,23 +95,19 @@ static int joystkGpioSetDrctnIn(void)
 
 	res = fileWriteS(GPIO_DRCTN_FILE_PATH(GPIO_PIN_JSUP), value);
 
-	if(res == 0)
-	{
+	if(res == 0){
 		res = fileWriteS(GPIO_DRCTN_FILE_PATH(GPIO_PIN_JSPB), value);
 	}
 
-	if(res == 0)
-	{
+	if(res == 0){
 		res = fileWriteS(GPIO_DRCTN_FILE_PATH(GPIO_PIN_JSRT), value);
 	}
 
-	if(res == 0)
-	{
+	if(res == 0){
 		res = fileWriteS(GPIO_DRCTN_FILE_PATH(GPIO_PIN_JSDN), value);
 	}
 
-	if(res == 0)
-	{
+	if(res == 0){
 		res = fileWriteS(GPIO_DRCTN_FILE_PATH(GPIO_PIN_JSLFT), value);
 	}
 
@@ -136,18 +120,15 @@ static int joystkGpioSetDrctnIn(void)
 int joystkInit(void)
 {
 	int res = 0;
-
 	joystkDirection = JOYST_NONE;
 
 	res = joystkGpioExport();
 
-	if(res == 0)
-	{
+	if(res == 0){
 		res = joystkGpioSetDrctnIn();
 	}
 
-	if(res == 0)
-	{
+	if(res == 0){
 		printf("...Creating joystick thread.\n");
 		res = pthread_create(&jsThreadId, NULL,  (void *)&joystkTask, NULL);
 	}

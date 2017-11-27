@@ -30,7 +30,6 @@
 #define SONG_1_NODE_TOTAL_NUM 25
 
 
-
 int song0[SONG_0_NODE_TOTAL_NUM][2] = {
 							{BUZZ_SOUND_NODE_DO, 500},
 							{BUZZ_SOUND_NODE_DO, 500},
@@ -77,61 +76,17 @@ int song1[SONG_1_NODE_TOTAL_NUM][2] = {
 							{BUZZ_SOUND_NODE_SO, 1000}
 						 };
 
-/*
-int song0[SONG_0_NODE_TOTAL_NUM][2] = {
-							{BUZZ_SOUND_NODE_DO, 1},
-							{BUZZ_SOUND_NODE_DO, 1},
-							{BUZZ_SOUND_NODE_SO, 1},
-							{BUZZ_SOUND_NODE_SO, 1},
-							{BUZZ_SOUND_NODE_RA, 1},
-							{BUZZ_SOUND_NODE_RA, 1},
-							{BUZZ_SOUND_NODE_SO, 1},
-							{BUZZ_SOUND_NODE_NONE, 1},
-							{BUZZ_SOUND_NODE_FA, 1},
-							{BUZZ_SOUND_NODE_FA, 1},
-							{BUZZ_SOUND_NODE_MI, 1},
-							{BUZZ_SOUND_NODE_MI, 1},
-							{BUZZ_SOUND_NODE_RE, 1},
-							{BUZZ_SOUND_NODE_RE, 1},
-							{BUZZ_SOUND_NODE_DO, 1}
-						 };
-
-int song1[SONG_1_NODE_TOTAL_NUM][2] = {
-							{BUZZ_SOUND_NODE_DO, 1},
-							{BUZZ_SOUND_NODE_DO, 1},
-							{BUZZ_SOUND_NODE_SO, 1},
-							{BUZZ_SOUND_NODE_SO, 1},
-							{BUZZ_SOUND_NODE_RA, 1},
-							{BUZZ_SOUND_NODE_RA, 1},
-							{BUZZ_SOUND_NODE_SO, 1},
-							{BUZZ_SOUND_NODE_NONE, 1},
-							{BUZZ_SOUND_NODE_FA, 1},
-							{BUZZ_SOUND_NODE_FA, 1},
-							{BUZZ_SOUND_NODE_MI, 1},
-							{BUZZ_SOUND_NODE_MI, 1},
-							{BUZZ_SOUND_NODE_RE, 1},
-							{BUZZ_SOUND_NODE_RE, 1},
-							{BUZZ_SOUND_NODE_DO, 1}
-						 };
-*/
 typedef int songArr[2];
-
-typedef struct
-{
+typedef struct{
 	songArr *node;
 	int nodeTotalNum;
 }buzzNode_t;
 
-buzzNode_t songList[2];
 
-pthread_t buzzer_thread;
-
+static buzzNode_t songList[2];
+static pthread_t buzzer_thread;
 static bool buzzLoop;
-
-
-//buzz_t buzzList[BUZZ_MODE_TOTAL];
-
-int buzzPeriodList[BUZZ_MODE_TOTAL];
+static int buzzPeriodList[BUZZ_MODE_TOTAL];
 
 
 int pmwBuzzConfigExport(void)
@@ -177,11 +132,6 @@ int pmwBuzzValueSet(int period, int cycle)
 		res = fileWriteD(PMW_SYS_FS_CYCLE(PMW_CHIP_NUM_BUZZ, PMW_NUM_BUZZ), cycle);
 	}
 
-//	if(0 == res)
-//	{
-//		res = pmwBuzzOn();
-//	}
-
 	return res;
 }
 
@@ -189,8 +139,7 @@ int pmwBuzzSound(int mode)
 {
 	int res = 0;
 
-	if((mode < 0) || (mode >= BUZZ_MODE_TOTAL))
-	{
+	if((mode < 0) || (mode >= BUZZ_MODE_TOTAL)){
 		printf("ERROR: Buzzer mode %d is not supported.\n", mode);
 		return -1;
 	}
@@ -219,13 +168,6 @@ int pmwBuzzPlay(songArr* node, int pos)
 
     sleep_msec(node[pos][1]);
 
-/*
-	//Delay after playing each node
-	for(int i = 0; i < node[pos][1]; i++)
-	{
-		nanosleep(&delay500ms, NULL);
-	}
-*/
 	pmwBuzzOff();
 
 	return res;
@@ -260,15 +202,12 @@ void pmwBuzzTask(void)
 
 	songMode = getAlarmBuzzMode();
 
-	while(!isStopping())
-	{
-		if(getAlarmTrigger() && getAlarmArm())
-		{
+	while(!isStopping()){
+		if(getAlarmTrigger() && getAlarmArm()){
             int buzzMode = getAlarmBuzzMode();
 
 			//Check if the alarm sound is changed
-			if(songMode != buzzMode)
-			{
+			if(songMode != buzzMode){
 				songMode = buzzMode;
 				pos = 0;
 			}
@@ -280,108 +219,11 @@ void pmwBuzzTask(void)
 			if(pos == songList[songMode].nodeTotalNum)
 				pos = 0;
 
-		}
-		else
-		{
+		}else{
 			pmwBuzzOff();
 		}
-
-		nanosleep(&delay100ms, NULL);
+		sleep_msec(100);
 	}
-
-}
-
-int pmwBuzzLoop(void)
-{
-	int res = 0;
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_DO);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_DO);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_SO);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_SO);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_RA);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_RA);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_SO);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	
-	pmwBuzzOff();
-	nanosleep(&delay1s, NULL);
-
-	
-	pmwBuzzSound(BUZZ_SOUND_IDX_FA);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_FA);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-	
-	pmwBuzzSound(BUZZ_SOUND_IDX_MI);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_MI);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_RE);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_RE);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	pmwBuzzSound(BUZZ_SOUND_IDX_DO);
-	pmwBuzzOn();
-	nanosleep(&delay500ms, NULL);
-	pmwBuzzOff();
-	nanosleep(&delay100ms, NULL);
-
-	return res;
 }
 
 void pmwBuzzCleanUp(void)
@@ -420,8 +262,7 @@ int pmwBuzzInit(void)
 
 
 	res = pthread_create(&buzzer_thread, NULL,  (void *)&pmwBuzzTask, NULL);
-    if( res )
-	{
+    if( res ){
 		printf("Thread buzzer creation failed: %d\n", res);
 		return -1;	
 	}

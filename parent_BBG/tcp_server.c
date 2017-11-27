@@ -1,5 +1,13 @@
-/* A simple server in the internet domain using TCP
-   The port number is passed as an argument */
+/** 
+ *  
+ * A simple server in the internet domain using TCP.The port 
+ * number is passed as an argument 
+ *  
+ * Some code are captured from 
+ * http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html 
+ *  
+ * */ 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -55,7 +63,7 @@ static void tcpServerTask(void)
 	//int res;
 	int numberOfConnection;
 	int num_bytes;
-	//int pid;
+
 
 	client_lenth = sizeof(tcp_client);
 
@@ -72,8 +80,6 @@ static void tcpServerTask(void)
 
 		if(numberOfConnection>0)
 		{
-			// printf("number of connection%d\n",numberOfConnection);
-
             /* Service all the sockets with input pending. */
             for (int i = 0; i < FD_SETSIZE; i++) {
                 if (FD_ISSET (i, &readFD) ){
@@ -110,69 +116,8 @@ static void tcpServerTask(void)
                 }
             }
 		}
-
-		//if(num_bytes < 0) printf("ERROR reading from socket");
-
-		//num_bytes = write(newsocketfd, "I got your message\n", 19);
-
-        //if(num_bytes < 0) printf("ERROR writing from socket");
-        //close(newsocketfd);
-        	//nanosleep(&delay100ms, NULL);
-
 	}
-	//printf("TCP SERVER CLOSED\n");
-
-	 /*while (!stopping) {
-         newsocketfd = accept(socketfd, (struct sockaddr *) &tcp_client, &client_lenth);
-
-         if (newsocketfd < 0)
-            printf("ERROR on accept");
-         pid = fork();
-         if (pid < 0)
-             printf("ERROR on accept");
-         if (pid == 0)  {
-             close(socketfd);
-             memset(rx_buffer, 0, sizeof(rx_buffer));
-  		//memset(tx_buffer, '\0', sizeof(tx_buffer));
-			num_bytes = read(newsocketfd, rx_buffer, RX_BUFLEN);
-		//tcpServerCmdParse(rx_buffer);
-			printf("Here is the message: %s\n",rx_buffer);
-
-			if(num_bytes < 0) printf("ERROR reading from socket");
-
-			num_bytes = write(newsocketfd, "I got your message\n", 19);
-
-        	if(num_bytes < 0) printf("ERROR writing from socket");
-            /// dostuff(newsockfd);
-             exit(0);
-         }
-         else close(newsocketfd);
-     } */
 }
-/*static void test(void)
-{
-	char rx_buffer[RX_BUFLEN];
-	//char tx_buffer[TX_BUFLEN];
-	int num_bytes;
-
-	client_lenth = sizeof(tcp_client);
-	newsocketfd = accept(socketfd, (struct sockaddr *) &tcp_client, &client_lenth);
-
-	if(newsocketfd < 0)
-		printf("ERROR on accept");
-
-	memset(rx_buffer, 0, sizeof(rx_buffer));
-  		//memset(tx_buffer, '\0', sizeof(tx_buffer));
-	num_bytes = read(newsocketfd, rx_buffer, RX_BUFLEN);
-	printf("Here is the message: %s\n",rx_buffer);
-
-	if(num_bytes < 0) printf("ERROR reading from socket");
-
-	num_bytes = write(newsocketfd, "I got your message", 18);
-
-    if(num_bytes < 0) printf("ERROR writing from socket");
-
-}*/
 
 static int tcpServerBindPort(void)
 {
@@ -180,7 +125,7 @@ static int tcpServerBindPort(void)
 	socketfd = socket(AF_INET, SOCK_STREAM, 0);
 
 	if (socketfd < 0)
-        	printf("ERROR opening socket");
+        printf("ERROR opening socket");
 
     //bzero((char *) &tcp_server, sizeof(tcp_server));
 	memset (&tcp_server, 0, sizeof(struct sockaddr_in));
@@ -191,7 +136,7 @@ static int tcpServerBindPort(void)
 
 
 	if (bind(socketfd, (struct sockaddr *) &tcp_server,sizeof(tcp_server)) < 0)
-            printf("ERROR on binding reason: %s", strerror(errno));
+        printf("ERROR on binding reason: %s", strerror(errno));
 
 	listen(socketfd, MAX_NUM_CONNECTION);
 
@@ -280,16 +225,12 @@ int tcpServerInit(void)
 
 	res = pthread_create(&tcpServerThreadId, NULL,  (void *)&tcpServerTask, NULL);
 
-    if( res )
-	{
+    if( res ){
 		printf("Thread creation failed: %d\n", res);
 		return -1;
 	}
 
 	return res;
-
-	//test();
-	//tcpServerCleanup();
 }
 
 

@@ -138,8 +138,7 @@ int gpioPinInit(int gpioPin, _Bool isOut)
     //Export GPIO pinê
     res = fileWriteD(GPIO_EXPORT, gpioPin);
 
-    if (res == 0)
-    {
+    if (res == 0){
         //Set GPIO pin direction
         res = gpioSetDirection(gpioPin, isOut);
     }

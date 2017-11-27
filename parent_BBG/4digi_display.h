@@ -3,8 +3,6 @@
 
 #include <pthread.h>
 
-extern pthread_t digiDisplay_thread;
-
 int digiDispNum(int num);
 int digiDispInit(void);
 void digiDispCleanUp(void);
