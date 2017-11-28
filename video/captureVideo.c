@@ -1,11 +1,7 @@
 ﻿/*
- *  V4L2 video capture example, modified by Derek Molloy for the Logitech C920 camera
- *  Modifications, added the -F mode for H264 capture and associated help detail
- *  www.derekmolloy.ie
- *
- *  V4L2 video capture example
- *
- *  This program can be used and distributed without restrictions.
+ *  V4L2 video capture
+ * 
+ *  Modified by Baihui Zhang for the Logitech C270 camera
  *
  *      This program is provided with the V4L2 API
  * see http://linuxtv.org/docs.php for more information
@@ -491,8 +487,8 @@ static void init_device(void)
 	fprintf(stderr, "Force Format %d\n", force_format);
         if (force_format) {
 		if (force_format==2){
-             		fmt.fmt.pix.width       = 1280;     
-           		fmt.fmt.pix.height      = 720;  
+             		fmt.fmt.pix.width       = 640;     
+           		fmt.fmt.pix.height      = 480;  
   			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
                 	fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 		}

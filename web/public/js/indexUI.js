@@ -159,6 +159,7 @@ function waitForNodeServerResponse() {
         displayTemperature("Unknown");
         displayDecibel("Unknown");
 
+
         // destroy the graphs on the web if monitor BBG is not running
         destroyAllGraph();
     });
@@ -296,10 +297,12 @@ function destroyAllGraph() {
     if (temperatureChartObj) {
         temperatureChartObj.destroy();
         temperatureChartObj = undefined;
+
     }
 
     if (decibelChartObj) {
         decibelChartObj.destroy();
         decibelChartObj = undefined;
+
     }
 }
