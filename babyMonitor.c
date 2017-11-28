@@ -15,6 +15,7 @@ static _Bool isSystemRunning = false;
 
 static void startBabyMonitor(void);
 static void stopBabyMonitor(void);
+static _Bool restartReqSent;
 
 int main(int argc, char const *argv[])
 {
