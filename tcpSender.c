@@ -9,6 +9,7 @@
 #include <netdb.h>      // sockaddr_in
 #include <arpa/inet.h>  // inet_pton
 #include <signal.h>     // signal
+#include <fcntl.h>      // fcntl
 #include "tcpSender.h"
 
 #define MAX_SEND_MSG_LEN            500
@@ -19,8 +20,7 @@
 #define PARENT_BBG_PORT_NUM         12345
 
 static int clientSocketFD;
-static struct sockaddr_in parentBBGAddr;
-static _Bool wasConnectionSuccess;
+static _Bool wasConnectionSuccess = false;
 static pthread_mutex_t connectionFlagMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void getFormatedMsg(DATA_CATEGORY CATEGORY, int dataVal, char *message);
@@ -61,11 +61,13 @@ _Bool TCPSender_sendDataToParentBBG(DATA_CATEGORY CATEGORY, int dataToSend)
         reconnectToParentBBG();
     }
 
-    if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT| MSG_NOSIGNAL) == -1) {
-        printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
-        keepTCPClientAlive(errno);
+    if (wasConnectionSuccess) {
+        if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT| MSG_NOSIGNAL) == -1) {
+            printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
+            keepTCPClientAlive(errno);
 
-        return false;
+            return false;
+        }
     }
 
     return true;
@@ -81,11 +83,13 @@ _Bool TCPSender_sendAlarmRequestToParentBBG(void)
         reconnectToParentBBG();
     }
 
-    if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT | MSG_NOSIGNAL) == -1) {
-        printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
-        keepTCPClientAlive(errno);
+    if (wasConnectionSuccess) {
+        if (send(clientSocketFD, msgToParentBBG, strlen(msgToParentBBG), MSG_DONTWAIT | MSG_NOSIGNAL) == -1) {
+            printf("[ERROR] failed to send %s to parent's BBG reason: %s\n", msgToParentBBG, strerror(errno));
+            keepTCPClientAlive(errno);
 
-        return false;
+            return false;
+        }
     }
 
     return true;
@@ -99,6 +103,8 @@ void TCPSender_cleanUp(void)
 // create a TCP socket to talk to parent's BBG
 static _Bool initTCPSocket(void)
 {
+    struct sockaddr_in parentBBGAddr;
+
     parentBBGAddr.sin_family = AF_INET;
     parentBBGAddr.sin_port = htons(PARENT_BBG_PORT_NUM);
 
@@ -115,6 +121,10 @@ static _Bool initTCPSocket(void)
         printf("[ERROR] failed to initialize client's TCP socket reason: %s\n", strerror(errno));
 
         return false;
+    }
+
+    if (fcntl(clientSocketFD, F_SETFL, O_NONBLOCK) == -1) {
+        printf("[ERROR] failed to set client's TCP socket to O_NONBLOCK reason: %s\n", strerror(errno));
     }
 
     if (connect(clientSocketFD, (struct sockaddr*)&parentBBGAddr, sizeof(parentBBGAddr)) == -1) {
@@ -172,6 +182,7 @@ static void keepTCPClientAlive(int connectionErrNum)
 // re-establish the connection to parent's BBG
 static void reconnectToParentBBG()
 {
+    printf("Connection to parent's BBG was dropped or not established. Retry connection...\n");
     TCPSender_cleanUp();
     TCPSender_init();
 }

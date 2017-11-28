@@ -106,7 +106,7 @@ static void RespondClientsRequest(char *clientRequest, int clientFd, struct sock
     int currentTemperature, currentDecibel;
 
     if (strcmp(clientRequest, "getMonitorBBGStatus") == 0) {
-        if ( BabayMonitor_isSystemRunning() ) {
+        if ( BabayMonitor_getSystemRunningStatus() ) {
             sprintf(responseMsg, "%s:Active", clientRequest);
         }
         else {
