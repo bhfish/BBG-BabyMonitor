@@ -25,6 +25,7 @@ void Video_stopStreaming()
 	void *videoThreadExitStatus;
 	//stopStreaming = true;
 	kill(child_pid, SIGTERM);
+	waitpid(child_pid, NULL, 0);
 
 	if(pthread_join( video_thread, &videoThreadExitStatus)!=0)
 	{
@@ -51,6 +52,8 @@ void Video_stopStreaming()
 static void* startStreamVideo()
 {
 	//system(command);
+	//int status;
+	int rt=0;
 	if( (child_pid = fork()) == -1){
 		printf("[ERROR] failed to fork child process for video streaming: %s\n", strerror(errno));
 	}
@@ -64,7 +67,18 @@ static void* startStreamVideo()
 		}
 	}else if(child_pid>0)
 	{
-		wait(NULL);
+		//wait(NULL);
+		while(rt==0){
+			//TODO: kick the watchdog here
+			
+			sleep(10);
+			rt = waitpid(child_pid, NULL, WNOHANG);
+		}
+		if(rt==-1){
+			printf("[ERROR] check videoCapture status error\n");
+		}else{
+			printf("[ERROR] videoCapture exited unexpectedly\n");
+		}
 	}
 
 	pthread_exit(PTHREAD_CANCELED);
