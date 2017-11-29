@@ -7,7 +7,6 @@
 #include <fcntl.h>              // open
 #include <errno.h>              // errno
 #include <string.h>             // strerror
-#include "babyMonitor.h"
 
 #define CONFIG_WATCH_DOG_TIME_OUT_IN_S          60
 #define WATCH_DOG_KICK_INTERVAL_IN_S            40
@@ -204,9 +203,6 @@ static void *startWatchDogThread(void *args)
         if (isOKToKick) {
             kickWatchDog();
         }
-
-        // isOKToKick is an indication/flag to tell whether all registered clients to the watch dog service are running or not
-        BabayMonitor_setSystemRunningStatus(isOKToKick);
     }
 
     // bad things happened...
