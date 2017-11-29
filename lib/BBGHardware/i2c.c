@@ -8,7 +8,7 @@
 #include <unistd.h>         // write
 #include <linux/i2c-dev.h>  // I2C_SLAVE
 #include <time.h>           // nanosleep
-#include "I2C.h"
+#include "i2c.h"
 
 #define I2CDRV_FILE                         "/dev/i2c"
 #define I2C_VIRTUAL_CAPE                    "BB-I2C"

@@ -1,6 +1,8 @@
 // baby monitor program
 core
 babyMonitor
+parentMonitor
+captureVideo
 
 // nodejs libraries
 node_modules
