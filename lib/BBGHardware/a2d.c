@@ -5,7 +5,7 @@
 #include <errno.h>      // errno
 #include <time.h>       // nanosleep
 #include <dirent.h>     // opendir
-#include "A2D.h"
+#include "a2d.h"
 
 #define A2D_SYS_FILE_SIZE                   50
 #define A2D_VIRTUAL_CAPE                    "BB-ADC"

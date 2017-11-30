@@ -5,7 +5,7 @@
 #include <string.h>     // strerror
 #include <errno.h>      // errno
 #include "tcpSender.h"
-#include "A2D.h"
+#include "a2d.h"
 #include "dataRecorder.h"
 #include "temperatureMonitor.h"
 #include "watchDog.h"
