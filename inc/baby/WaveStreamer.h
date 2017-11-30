@@ -5,8 +5,8 @@
 #ifndef WAVE_STREAMER_H
 #define WAVE_STREAMER_H
 
-_Bool WaveStreamer_startStreaming();
+_Bool WaveStreamer_startStreaming(int segmentSize);
 void WaveStreamer_stopStreaming();
-void WaveStreamer_setBuffer(void* buffer, int bufferSize);
+void WaveStreamer_setSegment(short* buffer);
 
 #endif

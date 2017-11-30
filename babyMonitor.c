@@ -16,6 +16,7 @@ static pthread_mutex_t systemStatusMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static _Bool startBabyMonitor(void);
 
+
 int main(int argc, char const *argv[])
 {
     int watchDogRefID, watchDogTimer;

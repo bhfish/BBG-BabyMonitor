@@ -11,6 +11,7 @@
 #include <string.h>
 #include "monitorData.h"
 #include "tcpSender.h"
+#include <time.h>
 
 static _Bool connectToDevice();
 static _Bool initializeDeviceSettings();
@@ -30,6 +31,7 @@ static void alertIfDecibelOutsideThreshHold();
 #define MIN_DECIBEL_THRESH_HOLD 0
 
 static const snd_pcm_uframes_t PERIOD_SIZE = 2400;
+static snd_pcm_uframes_t bufferSize;
 
 static snd_pcm_t *pcmDevice;
 static snd_pcm_hw_params_t *deviceSettings;
@@ -42,6 +44,8 @@ static pthread_mutex_t currentDecibelMutex = PTHREAD_MUTEX_INITIALIZER;
 static double currentDecibel;
 
 _Bool Microphone_startListening() {
+    bufferSize = 2 * PERIOD_SIZE * 2;
+
     if (!connectToDevice() || !initializeDeviceSettings()) {
         printf("Error: unable to initialize device");
         return false;
@@ -52,7 +56,7 @@ _Bool Microphone_startListening() {
         return false;
     }
 
-    if (!WaveStreamer_startStreaming()) {
+    if (!WaveStreamer_startStreaming(bufferSize)) {
         return false;
     }
 
@@ -148,7 +152,6 @@ static _Bool shouldStopListening() {
 }
 
 static void* listenOverMicrophone(void *args) {
-    snd_pcm_uframes_t bufferSize = 2 * PERIOD_SIZE * 2;
     short buffer[bufferSize];
     while (!shouldStopListening()) {
         snd_pcm_sframes_t frames;
@@ -159,7 +162,7 @@ static void* listenOverMicrophone(void *args) {
             pthread_exit(PTHREAD_CANCELED);
         }
 
-        WaveStreamer_setBuffer(buffer, bufferSize);
+        WaveStreamer_setSegment(buffer);
         setCurrentDecibels(buffer, bufferSize);
         alertIfDecibelOutsideThreshHold();
     }
@@ -185,17 +188,14 @@ static void setCurrentDecibels(short *buffer, int bufferSize) {
         currentDecibel = averageDecibels;
     }
     pthread_mutex_unlock(&currentDecibelMutex);
-
-    printf("\r current amplitude: %f current decibel: %d\n", averageAmplitude, Microphone_getCurrentDecibel());
-    fflush(stdout);
 }
 
 static void alertIfDecibelOutsideThreshHold() {
     int decibel = Microphone_getCurrentDecibel();
     if ( !Microphone_isDecibelNormal(decibel)) {
         printf("Decibel is out side of the threshold with value of: %d\n", decibel);
-        TCPSender_sendAlarmRequestToParentBBG();
+        //TCPSender_sendAlarmRequestToParentBBG();
     }
 
-    TCPSender_sendDataToParentBBG(SOUND, decibel);
+    //TCPSender_sendDataToParentBBG(SOUND, decibel);
 }
