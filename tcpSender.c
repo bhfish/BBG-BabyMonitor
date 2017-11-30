@@ -123,10 +123,6 @@ static _Bool initTCPSocket(void)
         return false;
     }
 
-    if (fcntl(clientSocketFD, F_SETFL, O_NONBLOCK) == -1) {
-        printf("[ERROR] failed to set client's TCP socket to O_NONBLOCK reason: %s\n", strerror(errno));
-    }
-
     if (connect(clientSocketFD, (struct sockaddr*)&parentBBGAddr, sizeof(parentBBGAddr)) == -1) {
         printf("[ERROR] failed to connect to parent's BBG reason %s\n", strerror(errno));
         close(clientSocketFD);

@@ -1,6 +1,7 @@
 "use strict"
 
-$(function(){
+//$(function(){
+$(document).ready(function(){
 		
 	var iosocket = io.connect('http://192.168.7.2:8088');
 	iosocket.on('connect', function () {
