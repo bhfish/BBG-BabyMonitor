@@ -22,7 +22,7 @@ static _Bool shouldStopStreaming();
 #define SERVER_IP "192.168.7.1"
 #define SERVER_PORT_NUMBER 12345
 #define MAX_BYTES_PER_PACKET 16384
-#define INITIAL_NUMBER_OF_PCM_SEGMENTS 300
+#define INITIAL_NUMBER_OF_PCM_SEGMENTS 100
 #define MAX_NUMBER_OF_PCM_SEGMENTS 400
 
 static int socketFd;
