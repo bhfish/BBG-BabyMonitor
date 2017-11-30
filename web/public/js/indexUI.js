@@ -23,13 +23,19 @@ var temperatureChartObj = undefined;
 var decibelChartObj = undefined;
 var isMonitorRunning = false;
 var isAlarmRunning = false;
+var temperatureCTX;
+var decibelCTX;
+//var temperatureCTX = $("#temperatureChart")[0].getContext('2d');
 
-var temperatureCTX = $("#temperatureChart")[0].getContext('2d');
-var decibelCTX = $("#decibelChart")[0].getContext('2d');
+//var decibelCTX = $("#decibelChart")[0].getContext('2d');
 
 // client side js begins here
 $(document).ready(function() {
     console.log("Document loaded");
+
+    temperatureCTX = document.getElementById('temperatureChart').getContext('2d');
+    decibelCTX = document.getElementById('decibelChart').getContext('2d');
+	
     turnOffErrorMessage();
     displayDefaultValues();
 

@@ -194,8 +194,8 @@ static void alertIfDecibelOutsideThreshHold() {
     int decibel = Microphone_getCurrentDecibel();
     if ( !Microphone_isDecibelNormal(decibel)) {
         printf("Decibel is out side of the threshold with value of: %d\n", decibel);
-        //TCPSender_sendAlarmRequestToParentBBG();
+        TCPSender_sendAlarmRequestToParentBBG();
     }
 
-    //TCPSender_sendDataToParentBBG(SOUND, decibel);
+    TCPSender_sendDataToParentBBG(SOUND, decibel);
 }
