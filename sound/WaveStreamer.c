@@ -10,35 +10,43 @@
 #include <semaphore.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h>
 
 static _Bool initializeSocket();
 static void* waveStreamer(void* args);
-static _Bool sendBuffer();
+static _Bool sendSegments();
+static _Bool sendPcmSegment(short* segment, int segmentSize);
 static void stopStreaming();
 static _Bool shouldStopStreaming();
 
 #define SERVER_IP "192.168.7.1"
-#define SERVER_PORT_NUMBER 1234
+#define SERVER_PORT_NUMBER 12345
 #define MAX_BYTES_PER_PACKET 16384
+#define INITIAL_NUMBER_OF_PCM_SEGMENTS 100
+#define MAX_NUMBER_OF_PCM_SEGMENTS 400
 
 static int socketFd;
 static struct sockaddr_in serverAddress;
 
 static sem_t bufferFull;
-static sem_t bufferEmpty;
-static short* pcmBuffer = NULL;
-static int pcmBufferSize = 0;
+static pthread_mutex_t bufferMutex = PTHREAD_MUTEX_INITIALIZER;
+static short* pcmSegments[MAX_NUMBER_OF_PCM_SEGMENTS];
+static int pcmSegmentSize = 0;
+static int currentPcmSegment = 0;
+static int numberOfSegmentsToBuffer = 0;
 
 static pthread_t streamingThread;
 static pthread_mutex_t stopStreamingMutex = PTHREAD_MUTEX_INITIALIZER;
 static _Bool stopStreamingFlag = false;
 
-_Bool WaveStreamer_startStreaming() {
+_Bool WaveStreamer_startStreaming(int segmentSize) {
 	if (pthread_create(&streamingThread, NULL, &waveStreamer, NULL) != 0) {
         printf("Error: failed to create new listener thread\n");
         return false;
     }
 
+    pcmSegmentSize = segmentSize;
+    numberOfSegmentsToBuffer = INITIAL_NUMBER_OF_PCM_SEGMENTS;
     return true;
 }
 
@@ -60,14 +68,23 @@ void WaveStreamer_stopStreaming() {
 	close(socketFd);
 }
 
-void WaveStreamer_setBuffer(void* buffer, int bufferSize) {
-	sem_wait(&bufferEmpty);
+void WaveStreamer_setSegment(short* buffer) {
+	pthread_mutex_lock(&bufferMutex);
 	{
-		pcmBufferSize = bufferSize;
-		pcmBuffer = (short *) malloc(pcmBufferSize);
-		memcpy(pcmBuffer, buffer, pcmBufferSize);
+		if (currentPcmSegment == MAX_NUMBER_OF_PCM_SEGMENTS) {
+			pthread_mutex_unlock(&bufferMutex);
+			return;
+		}
+
+		pcmSegments[currentPcmSegment] = malloc(pcmSegmentSize * sizeof(short));
+		memcpy(pcmSegments[currentPcmSegment], buffer, pcmSegmentSize);
+		currentPcmSegment++;
+
+		if (currentPcmSegment == numberOfSegmentsToBuffer) {
+			sem_post(&bufferFull);
+		}
 	}
-	sem_post(&bufferFull);
+	pthread_mutex_unlock(&bufferMutex);
 }
 
 static _Bool initializeSocket() {
@@ -99,7 +116,6 @@ static _Bool initializeSocket() {
 
 static void* waveStreamer(void* args) {
 	sem_init(&bufferFull, 0, 0);
-	sem_init(&bufferEmpty, 0, 1);
 
 	if (!initializeSocket()) {
 		printf("Error: unable to initialize UDP socket\n");
@@ -108,41 +124,64 @@ static void* waveStreamer(void* args) {
 	}
 
 	while (!shouldStopStreaming()) {
-		if (!sendBuffer()) {
-			printf("Error: unable to send buffer\n");
+		if (!sendSegments()) {
+			printf("Error: unable to send segments\n");
 
-            pthread_exit(PTHREAD_CANCELED);
+            //pthread_exit(PTHREAD_CANCELED);
 		}
 	}
 
 	pthread_exit(PTHREAD_CANCELED);
 }
 
-static _Bool sendBuffer() {
-	short* buffer = NULL;
-	int bufferSize = 0;
+static short** getSegments(int* segmentsCount) {
+	short** segments;
 	sem_wait(&bufferFull);
-    {
-    	bufferSize = pcmBufferSize;
-    	buffer = malloc(bufferSize);
-    	memcpy(buffer, pcmBuffer, bufferSize);
-    	free(pcmBuffer);
-    }
-    sem_post(&bufferEmpty);
+	pthread_mutex_lock(&bufferMutex);
+	{
+		segments = malloc(currentPcmSegment * sizeof(short *));
 
-    int packetsToSend = (bufferSize % MAX_BYTES_PER_PACKET == 0) ? bufferSize / MAX_BYTES_PER_PACKET : (bufferSize / MAX_BYTES_PER_PACKET) + 1;
-	int packetSize = (bufferSize / MAX_BYTES_PER_PACKET == 0) ? MAX_BYTES_PER_PACKET : bufferSize % MAX_BYTES_PER_PACKET;
-	int finalPacketSize = (bufferSize % MAX_BYTES_PER_PACKET == 0) ? MAX_BYTES_PER_PACKET : bufferSize % MAX_BYTES_PER_PACKET;
-
-	for (int i = 0; i < packetsToSend ; i++) {
-		int sendPacketSize = (i == (packetsToSend - 1)) ? packetSize : finalPacketSize;
-		if (sendto(socketFd, buffer + (i * packetSize), sendPacketSize, MSG_NOSIGNAL, (struct sockaddr*) &serverAddress, sizeof(serverAddress)) == -1) {
-			printf("Error: sending buffer\n");
-			return false;
+		for (int i = 0 ; i < currentPcmSegment ; i++) {
+			segments[i] = malloc(pcmSegmentSize * sizeof(short));
+			memcpy(segments[i], pcmSegments[i], pcmSegmentSize);
+			free(pcmSegments[i]);
 		}
+
+		numberOfSegmentsToBuffer = 1;
+		*segmentsCount = currentPcmSegment;
+		currentPcmSegment = 0;
+	}
+	pthread_mutex_unlock(&bufferMutex);
+
+	return segments;
+}
+
+static _Bool sendSegments() {
+	int segmentsCount = 0;
+	short** segments = getSegments(&segmentsCount);
+	for (int i = 0 ; i < segmentsCount ; i++) {
+		sendPcmSegment(segments[i], pcmSegmentSize);
 	}
 
-	free(buffer);
+	free(segments);
+	return true;
+}
+
+static _Bool sendPcmSegment(short* segment, int segmentSize) {
+	int packetsToSend = (segmentSize % MAX_BYTES_PER_PACKET == 0) ? segmentSize / MAX_BYTES_PER_PACKET : (segmentSize / MAX_BYTES_PER_PACKET) + 1;
+	int packetSize = (segmentSize / MAX_BYTES_PER_PACKET == 0) ?  segmentSize % MAX_BYTES_PER_PACKET : MAX_BYTES_PER_PACKET;
+	int finalPacketSize = (segmentSize % MAX_BYTES_PER_PACKET == 0) ? MAX_BYTES_PER_PACKET : segmentSize % MAX_BYTES_PER_PACKET;
+	for (int i = 0; i < packetsToSend ; i++) {
+		int sendPacketSize = (i == (packetsToSend - 1)) ? packetSize : finalPacketSize;
+		if (sendto(socketFd, segment + (i * packetSize), sendPacketSize, MSG_DONTWAIT, (struct sockaddr*) &serverAddress, sizeof(serverAddress)) == -1) {
+			printf("Error: sending segment\n");
+			return false;
+		}
+
+		nanosleep((const struct timespec[]){{0, 125000000L}}, NULL);
+	}
+
+	free(segment);
 	return true;
 }
 
