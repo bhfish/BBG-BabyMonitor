@@ -3,6 +3,7 @@
 #include "pmw.h"
 #include "util.h"
 #include "alarmMonitor.h"
+#include "watchDog.h"
 
 #define BUZZ_MODE_TOTAL        10
 #define BUZZ_SOUND_IDX_DEFAULT  0
@@ -197,9 +198,12 @@ void Buzzer_slectNextMode(void)
 
 void pmwBuzzTask(void)
 {
-	static int pos  = 0;
-	static int songMode;
+	int pos  = 0;
+	int songMode;
+    int watchDogRefID;
+    _Bool wasRegistrationSuccess;
 
+    wasRegistrationSuccess = WatchDog_registerToWatchDog(&watchDogRefID);
 	songMode = AlarmMonitor_getAlarmBuzzMode();
 
 	while(!AlarmMonitor_isStopping()){
@@ -222,6 +226,11 @@ void pmwBuzzTask(void)
 		}else{
 			Buzzer_turnOff();
 		}
+
+		if (wasRegistrationSuccess) {
+			WatchDog_kickWatchDog(watchDogRefID);
+		}
+		
 		sleep_msec(100);
 	}
 }
