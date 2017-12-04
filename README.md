@@ -1,4 +1,4 @@
-Third Eye Baby Monitor System
+#Third Eye Baby Monitor System#
 
 Our product will serve as a realtime baby monitoring system that alerts the parent if an issue is detected. Specifically, it will be comprised of two BeagleBone Greens (one with the parent and the other with the baby) and a PC to connect to and set up the system. The system will have a web interface to allow the parents to see real time data, such as current temperature or view the video streaming in realtime. While the baby monitoring portion will be able to alert on certain conditions such as excessive noise levels and temperatures outside of a set safe range. When these conditions are detected the baby monitor will send a message to the parent’s BeagleBone and thus sounding its buzzer. As well the parent’s BeagleBone also supports the features of being able to view the current status (temperature, decibel, etc.) through its 4-digit display and its joystick to toggle between various modes. 
 
@@ -7,7 +7,7 @@ B_BBG := BeagleBone that monitors in baby's room
 P_BBG := BeagleBone that carried by parent
 
 $ := host shell/terminal
-# := target/BeagleBone shell/terminal
+\# := target/BeagleBone shell/terminal
 
 BeagleBone System Dependencies 
 1) ffmpeg - see guide/TBA
