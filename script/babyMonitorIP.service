@@ -10,7 +10,7 @@
 Description=Service to auto configure the correct eth0 IP for both baby and parent's BBG
 
 [Service]
-WorkingDirectory=/root/
+WorkingDirectory=/root/script
 ExecStart=/bin/bash staticIP.sh
 SyslogIdentifier=babyMonitorIP
 
