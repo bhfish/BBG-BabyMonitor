@@ -12,10 +12,22 @@ Our product will serve as a realtime baby monitoring system that alerts the pare
 1. ffmpeg - see guide/TBA 
 
 ### **Host System Dependencies**
-1. openssh-server- sudo apt-get install openssh-server
-2. arm cross compiler - sudo apt-get install gcc-arm-linux-gnueabihf
-3. asound dev lib - sudo apt-get install libasound2-dev
-4. nodejs project manager - sudo apt-get install npm
+1. openssh-server
+```
+sudo apt-get install openssh-server
+```
+2. arm cross compiler
+```
+sudo apt-get install gcc-arm-linux-gnueabihf
+```
+3. asound dev lib
+```
+sudo apt-get install libasound2-dev
+```
+4. nodejs project manager
+```
+sudo apt-get install npm
+```
 
 ### **Installation**
 
