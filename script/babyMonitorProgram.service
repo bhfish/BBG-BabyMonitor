@@ -1,0 +1,18 @@
+# copy this to /lib/systemd/system/
+# Run at startup:
+#   systemctl enable babyMonitorProgram.service
+#   (replace enable with: start, stop, restart)
+# Status:
+#   systemctl status babyMonitorProgram.service
+#   systemctl | grep babyMonitorProgram
+
+[Unit]
+Description=Service to auto-run the baby monitoring program in baby's BBG
+
+[Service]
+WorkingDirectory=/root/
+ExecStart=babyMonitor
+SyslogIdentifier=babyMonitorProgram
+
+[Install]
+WantedBy=multi-user.target

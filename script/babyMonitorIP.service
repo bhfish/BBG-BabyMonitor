@@ -1,0 +1,18 @@
+# copy this to /lib/systemd/system/
+# Run at startup:
+#   systemctl enable babyMonitorIP.service
+#   (replace enable with: start, stop, restart)
+# Status:
+#   systemctl status babayMonitorIP.service
+#   systemctl | grep babyMonitorIP
+
+[Unit]
+Description=Service to auto configure the correct eth0 IP for both baby and parent's BBG
+
+[Service]
+WorkingDirectory=/root/script
+ExecStart=/bin/bash staticIP.sh
+SyslogIdentifier=babyMonitorIP
+
+[Install]
+WantedBy=multi-user.target

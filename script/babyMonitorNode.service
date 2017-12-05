@@ -1,0 +1,18 @@
+# copy this to /lib/systemd/system/
+# Run at startup:
+#   systemctl enable babyMonitorNode.service
+#   (replace enable with: start, stop, restart)
+# Status:
+#   systemctl status babayMonitorNode.service
+#   systemctl | grep babyMonitorNode
+
+[Unit]
+Description=Service to auto-run the nodejs server of baby monitoring system
+
+[Service]
+WorkingDirectory=/root/web/
+ExecStart=/usr/bin/nodejs --harmony server.js
+SyslogIdentifier=babyMonitorNode
+
+[Install]
+WantedBy=multi-user.target
