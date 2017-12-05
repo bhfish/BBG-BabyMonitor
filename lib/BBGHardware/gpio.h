@@ -29,8 +29,6 @@
 //extended 4-digit display
 #define GPIO_PIN_DISPLAY_CLK  7
 #define GPIO_PIN_DISPLAY_DIO  20
-//#define GPIO_PIN_DISPLAY_CLK  2
-//#define GPIO_PIN_DISPLAY_DIO  3
 
 
 //Zen cape display
@@ -46,25 +44,4 @@ int gpioReadD(int gpioPin);
 int gpioSetDirection(int gpioPin, _Bool isOut);
 int gpioPinInit(int gpioPin, _Bool isOut);
 
-/*
-typedef enum
-{
-	gpioJSUP = 26,  //Joystick Up
-	gpioJSPB = 27,  //Joystick Pushed
-	gpioJSRT = 47,  //Joystick Right
-	gpioJSDN = 46,  //Joystick Down
-	gpioJSLFT= 65   //Joystick Left
-}gpioNum_t;
-
-
-int gpioValueFileRead(gpioNum_t num);
-
-
-*/
-
-
-//int gpioDirSetOut(const int gpio);
-//int gpioDirSetIn(const int gpio);
-//int gpioReadD(const int gpio);
-//int gpioExport(const int gpio);
 #endif

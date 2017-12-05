@@ -58,10 +58,6 @@ static void tcpServerTask(void)
     char tx_buffer[TX_BUFLEN];
     fd_set activeFD, readFD;
 
-    // WILSON, a bug here. have to explicitly set stopping to false; otherwise, sometimes the following codes won't run
-    //stopping = false;
-	//char tx_buffer[TX_BUFLEN];
-	//int res;
 	int numberOfConnection;
 	int num_bytes;
 
@@ -95,18 +91,15 @@ static void tcpServerTask(void)
                         FD_SET (newsocketfd, &activeFD);
                     }
                     else {
-                        /* Data arriving on an already-connected socket. */
-                        //printf("I'm here s\n");
+                        //Data arriving on an already-connected socket. 
                         memset(rx_buffer, 0, sizeof(rx_buffer));
                         memset(tx_buffer, '\0', sizeof(tx_buffer));
 
                         num_bytes = read(i, rx_buffer, RX_BUFLEN);
-                        //printf("numb: %d\n", num_bytes);
 
                         if(num_bytes > 0)
                         {
                             tcpServerCmdParse(rx_buffer, tx_buffer);
-                            //printf("Here is the message: %s\n",rx_buffer);
                             if (strlen(tx_buffer) != 0){
                                 inet_ntop(AF_INET, &tcp_client.sin_addr.s_addr, clientIPAddrName, INET_ADDRSTRLEN);
                                 int numBytesWrite = write(i, tx_buffer, strlen(tx_buffer));
@@ -128,7 +121,6 @@ static int tcpServerBindPort(void)
 	if (socketfd < 0)
         printf("ERROR opening socket");
 
-    //bzero((char *) &tcp_server, sizeof(tcp_server));
 	memset (&tcp_server, 0, sizeof(struct sockaddr_in));
 
 	tcp_server.sin_family = AF_INET;
@@ -183,7 +175,6 @@ static int tcpServerCmdParse(char* rx_buffer, char* tx_buffer)
         else if(strcmp("close", token) == 0)
         {
             AlarmMonitor_stopProg();
-            //TCPServer_cleanUp();
             printf("Now close the program\n");
         }
         else {

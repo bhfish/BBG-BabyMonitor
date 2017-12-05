@@ -18,12 +18,7 @@
 // wait for I2C device specified by its bus number to be ready
 static _Bool waitForI2CDeviceReady(int bus);
 
-_Bool I2C_writeReg
-(
-    int I2CFd,              // [in] I2C write file descriptor
-    unsigned char regAddr,  // [in] I2C device's register to write
-    unsigned char memoryVal // [in] memory value to write
-)
+_Bool I2C_writeReg(int I2CFd, unsigned char regAddr, unsigned char memoryVal)
 {
     unsigned char buff[2];
     buff[0] = regAddr;
@@ -38,12 +33,7 @@ _Bool I2C_writeReg
     return true;
 }
 
-_Bool I2C_readSingleReg
-(
-    int I2CFd,                      // [in] I2C read file descriptor
-    unsigned char regAddr,          // [in] I2C device's register to write
-    char *memoryContent             // [in/out] pointer to hold register's memory content
-)
+_Bool I2C_readSingleReg(int I2CFd, unsigned char regAddr, char *memoryContent)
 {
     // To read a register, must first write the address
     if ( write(I2CFd, &regAddr, sizeof(regAddr)) != sizeof(regAddr) ) {
@@ -62,13 +52,7 @@ _Bool I2C_readSingleReg
     return true;
 }
 
-_Bool I2C_readSequentialReg
-(
-    int I2CFd,                      // [in] I2C read file descriptor
-    unsigned char startRegAddr,     // [in] starting device's register to read from
-    int numOfReg,                   // [in] number of register to read in a sequence
-    char *memoryContent             // [in/out] pinter to hold sequential registers' memory content
-)
+_Bool I2C_readSequentialReg(int I2CFd, unsigned char startRegAddr, int numOfReg, char *memoryContent)
 {
     if ( write(I2CFd, &startRegAddr, sizeof(startRegAddr)) != sizeof(startRegAddr) ) {
         printf("[ERROR] I2C: failed to write value: %p to register %x reason: %s\n", &startRegAddr, startRegAddr, strerror(errno));
@@ -85,11 +69,7 @@ _Bool I2C_readSequentialReg
     return true;
 }
 
-int I2C_init
-(
-    int bus,            // [in] bus number of I2C device
-    int deviceAddr      // [in] device I2C address
-)
+int I2C_init(int bus, int deviceAddr)
 {
     int I2CFd;
     FILE *fPtr;
@@ -138,10 +118,7 @@ int I2C_init
     return I2CFd;
 }
 
-static _Bool waitForI2CDeviceReady
-(
-    int bus  // [in] bus number of I2C device'
-)
+static _Bool waitForI2CDeviceReady(int bus)
 {
     struct timespec waitTime;
     const int MAX_WAIT_TIME = 5;

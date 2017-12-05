@@ -244,12 +244,6 @@ int Buzzer_init(void)
 {
 	int res = 0;
 
-	//Configure the CPU’s pin connected to the buzzer for use with PWM
-	//TO-DO
-
-	//Begin configuring the PWM functionality for the buzzer by exporting it
-	//res = pmwBuzzConfigExport();
-
 	//Load Buzzer sound mode
 	buzzPeriodList[0] = 1000000;
 	buzzPeriodList[1] = 3822630;

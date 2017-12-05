@@ -126,8 +126,6 @@ static void* waveStreamer(void* args) {
 	while (!shouldStopStreaming()) {
 		if (!sendSegments()) {
 			printf("Error: unable to send segments\n");
-
-            //pthread_exit(PTHREAD_CANCELED);
 		}
 	}
 

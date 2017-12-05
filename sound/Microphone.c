@@ -1,7 +1,3 @@
-//
-// Created by vincent on 10/22/17.
-//
-
 #include "WaveStreamer.h"
 #include <alsa/asoundlib.h>
 #include <math.h>
