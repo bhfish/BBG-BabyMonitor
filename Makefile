@@ -23,7 +23,7 @@ PARENT_BBG_OBJ_FILE = parentMonitor
 BABY_MONITOR_VIDEO_CAPTURE_OBJ_FILE = captureVideo
 
 NFS_PATH = $(HOME)/cmpt433/public/myApps
-ASOUND_LIB_PATH = $(HOME)/cmpt433/public/asound_lib_BBB
+ASOUND_LIB_PATH = $(BABY_MONITOR_LIB_INC_DIR)/asound_lib
 V4L2_LIB_PATH = $(BABY_MONITOR_LIB_INC_DIR)/v4l2_lib
 CFLAGS = -Wall -g -std=c99 -D _POSIX_C_SOURCE=200809L -Werror
 IFLAGS_BABY = -I $(BABY_BBG_INC_PATH) -I $(BABY_MONITOR_SYS_LIB_PATH) -I $(BBG_HW_LIB_PATH)
@@ -33,7 +33,7 @@ LFLAGS_VIDEO = -L$(V4L2_LIB_PATH) -lv4l2
 
 # optional build flags
 # DEBUG_MODE = -D DEBUG_MODE
-DEMO_MODE = -D DEMO_MODE
+# DEMO_MODE = -D DEMO_MODE
 
 all: begin baby parent captureVideo webServer done
 

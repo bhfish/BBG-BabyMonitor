@@ -13,9 +13,7 @@
 #include "digitDisplay.h"
 #include "tcpServer.h"
 #include "util.h"
-
-//Threshold to trigger alarm
-//#define SOUND_ALARM_TRIGGER_THRESHOLD  80
+#include "watchDog.h"
 
 //The maximum time buzzer sounds without push to stop
 #define BUZZER_ALARM_TRIGGER_CNTR_MAX  300
@@ -254,7 +252,9 @@ static void process(void)
 int main(int argc, char *argv[])
 {
     int rt = 0;
-
+    int watchDogRefID, watchDogTimer;
+    _Bool wasRegistrationSuccess;
+    
     if (rt == 0){
         rt = Buzzer_init();
     } else {
@@ -293,9 +293,21 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    wasRegistrationSuccess = WatchDog_registerToWatchDog(&watchDogRefID);
+
+    if (!wasRegistrationSuccess) {
+        printf("[ERROR] alarm thread unable to register to watch dog\n");
+    } else {
+        watchDogTimer = WatchDog_getWatchDogTimer();
+    }
+
     while(!AlarmMonitor_isStopping()){
         //Delay
-        sleep_msec(1000);
+        sleep_sec(watchDogTimer - 5);
+
+        if (wasRegistrationSuccess) {
+            WatchDog_kickWatchDog(watchDogRefID);
+        }
     }
 
     processCleanUp();

@@ -16,6 +16,7 @@ extern const struct timespec delay500ms;
 
 void sleep_usec(long usec);
 void sleep_msec(long msec);
+void sleep_sec(long sec);
 int fileWriteD(char* filePath, int value);
 int fileWriteS(char* filePath, char* value);
 int fileReadD(char* filePath);

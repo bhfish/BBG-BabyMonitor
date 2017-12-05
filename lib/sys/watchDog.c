@@ -8,8 +8,8 @@
 #include <errno.h>              // errno
 #include <string.h>             // strerror
 
-#define CONFIG_WATCH_DOG_TIME_OUT_IN_S          60
-#define WATCH_DOG_KICK_INTERVAL_IN_S            40
+#define CONFIG_WATCH_DOG_TIME_OUT_IN_S          120
+#define WATCH_DOG_KICK_INTERVAL_IN_S            20
 
 // this module only expects to manage no more than 10 clients who tried to register to the watch dog service
 #define MAX_NUM_REGISTERED_CLIENTS              10

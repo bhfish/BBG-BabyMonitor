@@ -21,6 +21,14 @@ void sleep_msec(long msec)
 	sleep_usec(msec * 1000);
 }
 
+void sleep_sec(long sec)
+{
+	struct timespec sleep_time;
+	sleep_time.tv_sec = sec;
+	sleep_time.tv_nsec = 0;
+	nanosleep(&sleep_time, NULL);
+}
+
 int fileWriteD(char* filePath, int value)
 {
 	FILE *pfile = NULL;

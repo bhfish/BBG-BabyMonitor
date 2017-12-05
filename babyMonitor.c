@@ -36,7 +36,7 @@ int main(int argc, char const *argv[])
 
         // would likely kick the watch dog a bit earlier as this timeout is a HARD timeout
         kickTime.tv_sec = watchDogTimer - 5;
-        remainTime.tv_nsec = 0;
+        kickTime.tv_nsec = 0;
     }
 
     while (true) {
