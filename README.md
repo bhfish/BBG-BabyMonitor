@@ -9,7 +9,8 @@ Our product will serve as a realtime baby monitoring system that alerts the pare
 4. \# := target/BeagleBone shell/terminal
 
 ### **BeagleBone System Dependencies** 
-1. ffmpeg - see guide/TBA 
+1. ffmpeg - see Capturing and Streaming Webcam Video with the BeagleBone Green.pdf 
+2. TMP36 sensor setup - see TMP36_sensor_guide.pdf
 
 ### **Host System Dependencies**
 1. openssh-server
