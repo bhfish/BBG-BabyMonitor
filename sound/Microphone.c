@@ -11,6 +11,7 @@
 #include <string.h>
 #include "monitorData.h"
 #include "tcpSender.h"
+#include "watchDog.h"
 #include <time.h>
 
 static _Bool connectToDevice();
@@ -29,6 +30,7 @@ static void alertIfDecibelOutsideThreshHold();
 #define MAX_AMPLITUDE 32767
 #define MAX_DECIBEL_THRESH_HOLD 60
 #define MIN_DECIBEL_THRESH_HOLD 0
+#define WATCH_DOG_KICK_ITERATION 10
 
 static const snd_pcm_uframes_t PERIOD_SIZE = 2400;
 static snd_pcm_uframes_t bufferSize;
@@ -153,6 +155,10 @@ static _Bool shouldStopListening() {
 
 static void* listenOverMicrophone(void *args) {
     short buffer[bufferSize];
+    int watchDogId = 0;
+    _Bool watchDogRegistrationSuccess = WatchDog_registerToWatchDog(&watchDogId);
+    int watchDogIterationCounter = 0;
+
     while (!shouldStopListening()) {
         snd_pcm_sframes_t frames;
         frames = snd_pcm_readi(pcmDevice, &buffer, bufferSize);
@@ -165,6 +171,15 @@ static void* listenOverMicrophone(void *args) {
         WaveStreamer_setSegment(buffer);
         setCurrentDecibels(buffer, bufferSize);
         alertIfDecibelOutsideThreshHold();
+
+        if (watchDogRegistrationSuccess) {
+            if (watchDogIterationCounter == WATCH_DOG_KICK_ITERATION) {
+                WatchDog_kickWatchDog(watchDogId);
+                watchDogIterationCounter = 0;
+            } else {
+                watchDogIterationCounter++;
+            }
+        }
     }
 
     pthread_exit(PTHREAD_CANCELED);
