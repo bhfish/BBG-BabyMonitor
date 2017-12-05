@@ -36,6 +36,7 @@ sudo apt-get install npm
 2. complie from source
 ```
 $ tar -xvf Third-Eye-Baby-Monitor.tar.gz
+$ cd Third-Eye-Baby-Monitor/
 $ make
 ```
 
