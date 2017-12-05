@@ -9,7 +9,7 @@ $(document).ready(function(){
                 $('#video-status').html($('<li>Connected</li>'));
 				
 		iosocket.on('disconnect', function() {
-                    $('#video-status').html('<li>Disconnected</li>');
+                    $('#video-status').html($('<li>Disconnected</li>'));
                 });
 				
                 iosocket.on('message', function(message) {
