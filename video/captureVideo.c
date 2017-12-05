@@ -487,8 +487,8 @@ static void init_device(void)
 	fprintf(stderr, "Force Format %d\n", force_format);
         if (force_format) {
 		if (force_format==2){
-             		fmt.fmt.pix.width       = 640;     
-           		fmt.fmt.pix.height      = 480;  
+             		fmt.fmt.pix.width       = 640;  //up to 1280   
+           		fmt.fmt.pix.height      = 480;  //up to 720
   			fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
                 	fmt.fmt.pix.field       = V4L2_FIELD_NONE;
 		}
